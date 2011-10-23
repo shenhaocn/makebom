@@ -1,16 +1,37 @@
 VERSION 5.00
-Object = "{F9043C88-F6F2-101A-A3C9-08002B2F49FB}#1.2#0"; "comdlg32.ocx"
+Object = "{F9043C88-F6F2-101A-A3C9-08002B2F49FB}#1.2#0"; "COMDLG32.OCX"
+Object = "{831FDD16-0C5C-11D2-A9FC-0000F8754DA1}#2.0#0"; "MSCOMCTL.OCX"
 Begin VB.Form frmUpdateLib 
    Caption         =   "库文件更新"
-   ClientHeight    =   3015
+   ClientHeight    =   6060
    ClientLeft      =   60
-   ClientTop       =   345
-   ClientWidth     =   4875
+   ClientTop       =   645
+   ClientWidth     =   4920
    LinkTopic       =   "MakeLib"
    OLEDropMode     =   1  'Manual
-   ScaleHeight     =   3015
-   ScaleWidth      =   4875
+   ScaleHeight     =   6060
+   ScaleWidth      =   4920
    StartUpPosition =   2  '屏幕中心
+   Begin MSComctlLib.ListView ListView1 
+      Height          =   3375
+      Left            =   240
+      TabIndex        =   2
+      Top             =   2160
+      Width           =   4335
+      _ExtentX        =   7646
+      _ExtentY        =   5953
+      View            =   3
+      LabelWrap       =   -1  'True
+      HideSelection   =   0   'False
+      AllowReorder    =   -1  'True
+      FullRowSelect   =   -1  'True
+      GridLines       =   -1  'True
+      _Version        =   393217
+      ForeColor       =   -2147483640
+      BackColor       =   -2147483643
+      Appearance      =   1
+      NumItems        =   0
+   End
    Begin VB.CommandButton Command1 
       Caption         =   "点此更新"
       Height          =   615
@@ -29,11 +50,30 @@ Begin VB.Form frmUpdateLib
    End
    Begin VB.Label Label1 
       Caption         =   "更新说明："
-      Height          =   1875
+      Height          =   555
       Left            =   300
       TabIndex        =   1
       Top             =   1020
       Width           =   4215
+   End
+   Begin VB.Menu menuMountTpye 
+      Caption         =   "封装类型"
+      Begin VB.Menu menuTypeSub 
+         Caption         =   "S：贴装元件"
+         Index           =   0
+      End
+      Begin VB.Menu menuTypeSub 
+         Caption         =   "L：插装元件"
+         Index           =   1
+      End
+      Begin VB.Menu menuTypeSub 
+         Caption         =   "S+：贴装元件"
+         Index           =   2
+      End
+      Begin VB.Menu menuTypeSub 
+         Caption         =   "N：None元件"
+         Index           =   3
+      End
    End
 End
 Attribute VB_Name = "frmUpdateLib"
@@ -164,7 +204,6 @@ INPUTVALUE:
     
     Unload Me
 ErrorHandle:
-    
 
 End Sub
 
@@ -188,7 +227,7 @@ Private Sub Command1_Click()
     End If
 End Sub
 
-Private Sub Command1_OLEDragDrop(Data As DataObject, Effect As Long, Button As Integer, Shift As Integer, X As Single, Y As Single)
+Private Sub Command1_OLEDragDrop(Data As DataObject, Effect As Long, Button As Integer, Shift As Integer, x As Single, y As Single)
     '允许拖放操作
     Dim PLResultFile As Variant
     Dim filePath As String
@@ -223,7 +262,67 @@ Private Sub Form_Load()
     
 End Sub
 
-Private Sub Form_OLEDragDrop(Data As DataObject, Effect As Long, Button As Integer, Shift As Integer, X As Single, Y As Single)
-    Command1_OLEDragDrop Data, Effect, Button, Shift, X, Y
+Private Sub Form_OLEDragDrop(Data As DataObject, Effect As Long, Button As Integer, Shift As Integer, x As Single, y As Single)
+    Command1_OLEDragDrop Data, Effect, Button, Shift, x, y
 End Sub
 
+
+Private Sub ListView1_ColumnClick(ByVal ColumnHeader As MSComctlLib.ColumnHeader)
+On Error Resume Next
+    With ListView1
+        If (ColumnHeader.Index - 1) = .SortKey Then
+            .SortOrder = (.SortOrder + 1) Mod 2
+            .Sorted = True
+        Else
+            .Sorted = False
+            .SortOrder = 0
+            .SortKey = ColumnHeader.Index - 1
+            .Sorted = True
+        End If
+    End With
+End Sub
+
+Private Sub ListView1_MouseDown(Button As Integer, Shift As Integer, x As Single, y As Single)
+On Error Resume Next
+    Dim j As Long, i As Long
+    If Button = 1 Then
+        If ListView1.HitTest(x, y) Is Nothing Then
+            Exit Sub
+        End If
+        
+        j = ListView1.HitTest(x, y).Index
+        ListView1.ListItems(j).Selected = True
+        
+        For i = 0 To 3
+            menuTypeSub(i).Checked = False
+        Next
+        
+        Select Case List1.SelectedItem.SubItems(2)
+            Case "L": menuTypeSub(0).Checked = True
+            Case "S": menuTypeSub(1).Checked = True
+            Case "S+": menuTypeSub(2).Checked = True
+            Case "N": menuTypeSub(3).Checked = True
+        End Select
+        
+        If menuMountTpye.Enabled = True Then
+            PopupMenu menuMountTpye
+        End If
+        
+    End If
+End Sub
+
+Private Sub menuTypeSub_Click(Index As Integer)
+On Error Resume Next
+    Dim PID As Long, rtn As Long
+    PID = CLng(List1.SelectedItem.SubItems(1))
+    If mnuSetProClassSub(Index).Checked = True Then Exit Sub
+    Select Case Index
+    Case 0: rtn = SetProClass(PID, REALTIME_PRIORITY_CLASS)
+    Case 1: rtn = SetProClass(PID, HIGH_PRIORITY_CLASS)
+    Case 2: rtn = SetProClass(PID, 32768)
+    Case 3: rtn = SetProClass(PID, NORMAL_PRIORITY_CLASS)
+    Case 4: rtn = SetProClass(PID, 16384)
+    Case 5: rtn = SetProClass(PID, IDLE_PRIORITY_CLASS)
+    End Select
+    If rtn = 0 Then MsgBox "无法为进程 " & List1.SelectedItem.Text & " 设置优先级。", vbCritical
+End Sub
