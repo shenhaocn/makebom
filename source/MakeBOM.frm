@@ -619,7 +619,7 @@ Public Sub BomStage_Two()
     '============================================
     
     Dim msgstr As String
-    msgstr = "BOM Maker File创建成功！" & vbCrLf & vbCrLf
+    msgstr = "             BOM 文件创建成功！" & vbCrLf & vbCrLf
     msgstr = msgstr + "          插装   元件个数为   ： " & PartNum(3) & vbCrLf
     msgstr = msgstr + "          贴装   元件个数为   ： " & PartNum(4) & vbCrLf
     msgstr = msgstr + "          其他   元件个数为   ： " & PartNum(5) & vbCrLf & vbCrLf
@@ -630,7 +630,7 @@ Public Sub BomStage_Two()
     msgstr = msgstr + "          生成的bmf文件不建议手动修改" & vbCrLf & vbCrLf
     msgstr = msgstr + "    注意：生成的BOM文件需要检查修改后才可供评审 "
     
-    MsgBox msgstr, vbInformation + vbOKOnly + vbMsgBoxSetForeground, "元件信息"
+    MsgBox msgstr, vbInformation + vbOKOnly + vbMsgBoxSetForeground, "BOM 文件创建成功"
     
     Exit Sub
 
@@ -661,8 +661,14 @@ Private Sub BomCreate()
     End If
     
     If Check_领料.Value = Checked Then
-        ExcelCreate BOM_领料
-        CreateBOM BOM_领料
+        'tsv文件是否失效？
+        If DateDiff("d", CDate(GetFileWriteTime(tsvFilePath)), Now) > 3 Then
+            MsgBox "tsv文件已经过期[" & GetFileWriteTime(tsvFilePath) & "]！" & vbCrLf & vbCrLf & _
+                   "生成领料BOM需最新的tsv文件！", vbCritical + vbOKOnly + vbMsgBoxSetForeground, "警告"
+        Else
+            ExcelCreate BOM_领料
+            CreateBOM BOM_领料
+        End If
         
     End If
     

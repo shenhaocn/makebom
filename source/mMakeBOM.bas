@@ -186,7 +186,7 @@ Function ExcelCreate(bt_value As BomType)
         xlSheet.Cells(5, 10) = "TP2库存"
         xlSheet.Cells(5, 11) = "TP3库存"
 
-        xlSheet.Cells(5, 9).Select
+        xlSheet.Cells(5, 1).Select
          
         xlBook.Close (True)
     End If
@@ -331,6 +331,7 @@ Function CreateBOM(bt_value As BomType) As Boolean
     ItemNum3 = 0
     
     '是否添加库存信息？
+    '需要检测tsv文件创建时间 如果时间不在3天内 库存信息添加了也是没有用的
     If bt_value = BOM_领料 Then
         OrgEnable = True
     Else

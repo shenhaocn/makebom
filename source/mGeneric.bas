@@ -2,6 +2,73 @@ Attribute VB_Name = "mGeneric"
 Option Explicit
 
 '==============================================================================
+' 读取文件建立时间 修改时间 保存时间
+'==============================================================================
+Public Const OFS_MAXPATHNAME = 128
+Public Const OF_READ = &H0
+Public Type OFSTRUCT
+    cBytes As Byte
+    fFixedDisk As Byte
+    nErrCode As Integer
+    Reserved1 As Integer
+    Reserved2 As Integer
+    szPathName(OFS_MAXPATHNAME) As Byte
+End Type
+
+Public Type SYSTEMTIME
+     wYear As Integer
+     wMonth As Integer
+     wDayOfWeek As Integer
+     wDay As Integer
+     wHour As Integer
+     wMinute As Integer
+     wSecond As Integer
+     wMilliseconds As Integer
+End Type
+
+Public Type FileTime
+     dwLowDateTime As Long
+     dwHighDateTime As Long
+End Type
+
+
+Public Type BY_HANDLE_FILE_INFORMATION
+     dwFileAttributes As Long
+     ftCreationTime As FileTime
+     ftLastAccessTime As FileTime
+     ftLastWriteTime As FileTime
+     dwVolumeSerialNumber As Long
+     nFileSizeHigh As Long
+     nFileSizeLow As Long
+     nNumberOfLinks As Long
+     nFileIndexHigh As Long
+     nFileIndexLow As Long
+End Type
+
+Public Type TIME_ZONE_INFORMATION
+     bias As Long
+     StandardName(32) As Integer
+     StandardDate As SYSTEMTIME
+     StandardBias As Long
+     DaylightName(32) As Integer
+     DaylightDate As SYSTEMTIME
+     DaylightBias As Long
+End Type
+
+
+Public Declare Function GetTimeZoneInformation Lib "kernel32" (lpTimeZoneInformation As TIME_ZONE_INFORMATION) As Long
+Public Declare Function OpenFile Lib "kernel32" (ByVal lpFileName As String, lpReOpenBuff As OFSTRUCT, ByVal wStyle As Long) As Long
+Public Declare Function GetFileInformationByHandle Lib "kernel32" (ByVal hFile As Long, lpFileInformation As BY_HANDLE_FILE_INFORMATION) As Long
+Public Declare Function CloseHandle Lib "kernel32" (ByVal hObject As Long) As Long
+Public Declare Function FileTimeToSystemTime Lib "kernel32" (lpFileTime As FileTime, lpSystemTime As SYSTEMTIME) As Long
+Public Const OF_READWRITE = &H2
+ 
+Public Declare Function SetFileTime Lib "kernel32" (ByVal hFile As Long, lpCreationTime As Any, lpLastAccessTime As Any, lpLastWriteTime As Any) As Long
+Public Declare Function SystemTimeToFileTime Lib "kernel32" (lpSystemTime As SYSTEMTIME, lpFileTime As FileTime) As Long
+Public Declare Sub GetSystemTime Lib "kernel32" (lpSystemTime As SYSTEMTIME)
+Public Declare Sub GetLocalTime Lib "kernel32" (lpSystemTime As SYSTEMTIME)
+
+'==============================================================================
 ' Constant defining ( 常数定义 )
 '==============================================================================
 Private Const GW_CHILD = 5
@@ -25,6 +92,85 @@ Const FLAGS = SWP_NOMOVE Or SWP_NOSIZE
 
 '==============================================================================
 Public ProcInfo As StatusBar
+Private hFile As Long
+
+'获取文件建立时间
+Function GetFileCreateTime(filePath As String) As String
+
+    Dim FileHandle As Long
+    Dim FileInfo As BY_HANDLE_FILE_INFORMATION
+    Dim lpReOpenBuff As OFSTRUCT, ft As SYSTEMTIME
+    Dim tZone As TIME_ZONE_INFORMATION
+    
+    Dim dtCreate As Date ' 建立时间。
+
+    Dim bias As Long
+    ' 先取得文件的Handle。
+    FileHandle = OpenFile(filePath, lpReOpenBuff, OF_READ)
+    ' 利用文件的Handle读取文件信息。
+    Call GetFileInformationByHandle(FileHandle, FileInfo)
+    Call CloseHandle(FileHandle)
+    ' 读取时间信息， 因为上一步骤的文件时间是格林威治时间。
+    Call GetTimeZoneInformation(tZone)
+    bias = tZone.bias ' 时间差， 以分为单位。
+    Call FileTimeToSystemTime(FileInfo.ftCreationTime, ft) ' 转换时间结构。
+    dtCreate = DateSerial(ft.wYear, ft.wMonth, ft.wDay) + TimeSerial(ft.wHour, ft.wMinute - bias, ft.wSecond)
+    
+    GetFileCreateTime = CStr(dtCreate)
+
+End Function
+
+'获取文件修改时间
+Function GetFileWriteTime(filePath As String) As String
+
+    Dim FileHandle As Long
+    Dim FileInfo As BY_HANDLE_FILE_INFORMATION
+    Dim lpReOpenBuff As OFSTRUCT, ft As SYSTEMTIME
+    Dim tZone As TIME_ZONE_INFORMATION
+    
+    Dim dtWrite As Date ' 修改时间。
+    Dim bias As Long
+    ' 先取得文件的Handle。
+    FileHandle = OpenFile(filePath, lpReOpenBuff, OF_READ)
+    ' 利用文件的Handle读取文件信息。
+    Call GetFileInformationByHandle(FileHandle, FileInfo)
+    Call CloseHandle(FileHandle)
+    ' 读取时间信息， 因为上一步骤的文件时间是格林威治时间。
+    Call GetTimeZoneInformation(tZone)
+    bias = tZone.bias ' 时间差， 以分为单位。
+    
+    Call FileTimeToSystemTime(FileInfo.ftLastWriteTime, ft)
+    dtWrite = DateSerial(ft.wYear, ft.wMonth, ft.wDay) + TimeSerial(ft.wHour, ft.wMinute - bias, ft.wSecond)
+
+    GetFileWriteTime = CStr(dtWrite)
+
+End Function
+
+'获取文件存取时间
+Function GetFileAccessTime(filePath As String) As String
+
+    Dim FileHandle As Long
+    Dim FileInfo As BY_HANDLE_FILE_INFORMATION
+    Dim lpReOpenBuff As OFSTRUCT, ft As SYSTEMTIME
+    Dim tZone As TIME_ZONE_INFORMATION
+    
+    Dim dtAccess As Date ' 存取日期。
+    Dim bias As Long
+    ' 先取得文件的Handle。
+    FileHandle = OpenFile(filePath, lpReOpenBuff, OF_READ)
+    ' 利用文件的Handle读取文件信息。
+    Call GetFileInformationByHandle(FileHandle, FileInfo)
+    Call CloseHandle(FileHandle)
+    ' 读取时间信息， 因为上一步骤的文件时间是格林威治时间。
+    Call GetTimeZoneInformation(tZone)
+    bias = tZone.bias ' 时间差， 以分为单位。
+    
+    Call FileTimeToSystemTime(FileInfo.ftLastAccessTime, ft)
+    dtAccess = DateSerial(ft.wYear, ft.wMonth, ft.wDay) + TimeSerial(ft.wHour, ft.wMinute - bias, ft.wSecond)
+
+    GetFileAccessTime = CStr(dtAccess)
+
+End Function
 
 '将 窗口设定成永远保持在最上层
 Function SetWindowsPos_TopMost(hwnd As Long)
@@ -149,9 +295,17 @@ Function Process(ProcessNum As Integer, ProcessMsg As String)
 End Function
 
 Function KillExcel(ExcelFilePath As String)
+On Error GoTo ErrorHandle
     If Dir(ExcelFilePath) <> "" Then
         Kill ExcelFilePath
     End If
+    
+    Exit Function
+    
+ErrorHandle:
+    MsgBox "文件：" & vbCrLf & Right(ExcelFilePath, Len(ExcelFilePath) - InStrRev(ExcelFilePath, "\")) & vbCrLf & vbCrLf & _
+           "已经打开或被占用，请将其关闭后重新运行程序！", vbCritical + vbOKOnly + vbMsgBoxSetForeground, "错误"
+    End
 End Function
 
 Function AutoLoginERP(uid As String, pwd As String)
