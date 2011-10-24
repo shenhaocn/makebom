@@ -36,7 +36,7 @@ Begin VB.Form frmLib
    Begin MSComctlLib.ListView ListView1 
       Height          =   5775
       Left            =   240
-      TabIndex        =   1
+      TabIndex        =   0
       Top             =   1080
       Width           =   8655
       _ExtentX        =   15266
@@ -58,7 +58,7 @@ Begin VB.Form frmLib
       Height          =   615
       Left            =   480
       OLEDropMode     =   1  'Manual
-      TabIndex        =   0
+      TabIndex        =   1
       Top             =   240
       Width           =   1935
    End
@@ -169,20 +169,6 @@ Private Sub UpdateSTD(newlibfile As String)
             Next j
     Next i
     
-    '检查是否所有的封装都有对应的贴装类型，没有的话提示添加
-    'For j = 2 To UBound(tmpLibLine) - 1
-    '    newAtom = Split(tmpLibLine(j), Space(1))
-    '    If UBound(newAtom) = 3 Then
-    '
-    '    ElseIf UBound(newAtom) = 2 Then
-    '        '添加贴装类型
-    '        MsgBox "请手动打开库文件填写未完成的封装分类!", vbInformation + vbMsgBoxSetForeground + vbOKOnly, "提示"
-    '        Exit For
-    '    Else
-    '        MsgBox "导入的库文件是错误的，拒绝更新库文件！", vbCritical + vbMsgBoxSetForeground + vbOKOnly, "错误"
-    '        Exit Sub
-    '    End If
-    'Next j
     
     If Dir(LibFilePath) <> "" Then
         Kill LibFilePath
@@ -201,12 +187,16 @@ Private Sub UpdateSTD(newlibfile As String)
     Put #1, , vbCrLf
 
     Close #1
-        
-    'MsgBox "Done!", vbInformation + vbMsgBoxSetForeground + vbOKOnly, "提示"
-    '打开库文件
-    'Shell "notepad " & LibFilePath, vbMaximizedFocus
     
+    '载入更新后的库文件 等待修改或检查
     LoadLibs
+    
+    '按封装类型排序
+    With ListView1
+        .SortOrder = 0    '顺序排序
+        .SortKey = 3 - 1  '按封装类型排序
+        .Sorted = True
+    End With
     
 ErrorHandle:
 
