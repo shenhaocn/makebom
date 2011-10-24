@@ -77,7 +77,7 @@ UEF_UTF16BE  'UTF-16BE
 UEF_UTF32LE  'UTF-32LE
 UEF_UTF32BE  'UTF-32BE
 
-UEF_Auto = -1 '自动识别编码
+UEF_AUTO = -1 '自动识别编码
 
 '隐藏项目
 [_UEF_Min] = UEF_ANSI
@@ -157,7 +157,7 @@ End Function
 'fmt：[out]返回编码类型
 Public Function UEFCheckUTF8NoBom(ByRef bufAll() As Byte, ByRef fmt As UnicodeEncodeFormat)
     
-    Dim i As Integer
+    Dim i As Long               '可能会溢出
     Dim cOctets As Long         '可以容纳UTF-8编码字符的字节大小 4bytes
     Dim bAllAscii As Boolean    '如果全部为ASCII，说明不是UTF-8
     
@@ -264,7 +264,7 @@ Public Function UEFCheckTextFileFormat(ByVal FileName As String) As UnicodeEncod
     '打开文件
     hFile = CreateFile(FileName, GENERIC_READ, FILE_SHARE_READ Or FILE_SHARE_WRITE, ByVal 0&, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, ByVal 0&)
     If INVALID_HANDLE_VALUE = hFile Then '文件无法打开
-        UEFCheckTextFileFormat = UEF_Auto
+        UEFCheckTextFileFormat = UEF_AUTO
         Exit Function
     End If
 
@@ -298,7 +298,7 @@ End Function
 '返回值：读取的文本。返回vbNullString表示文件无法打开
 'FileName：[in]文件名
 'fmt：[in,out]使用何种文本编码格式来读取文本。为UEF_Auto时表示自动判断，且在fmt参数返回文本所用编码格式
-Public Function UEFLoadTextFile(ByVal FileName As String, Optional ByRef fmt As UnicodeEncodeFormat = UEF_Auto) As String
+Public Function UEFLoadTextFile(ByVal FileName As String, Optional ByRef fmt As UnicodeEncodeFormat = UEF_AUTO) As String
     Dim hFile As Long
     Dim nFileSize As Long
     Dim nNumRead As Long
@@ -314,7 +314,7 @@ Public Function UEFLoadTextFile(ByVal FileName As String, Optional ByRef fmt As 
     Dim byTemp As Byte
     
     '判断fmt范围
-    If fmt <> UEF_Auto Then
+    If fmt <> UEF_AUTO Then
         If fmt < [_UEF_Min] Or fmt > [_UEF_Max] Then
             GoTo FunEnd
         End If
@@ -350,7 +350,7 @@ Public Function UEFLoadTextFile(ByVal FileName As String, Optional ByRef fmt As 
     
     
     '恢复文件指针
-    If fmt = UEF_Auto Then '自动判断
+    If fmt = UEF_AUTO Then '自动判断
         fmt = CurFmt
         'cbBOM = cbBOM
     Else '手动设置编码
@@ -461,7 +461,7 @@ End Function
 Public Function UEFSaveTextFile(ByVal FileName As String, _
                                 ByRef sText As String, _
                                 Optional ByVal IsAppend As Boolean = False, _
-                                Optional ByRef fmt As UnicodeEncodeFormat = UEF_Auto, _
+                                Optional ByRef fmt As UnicodeEncodeFormat = UEF_AUTO, _
                                 Optional ByVal DefFmt As UnicodeEncodeFormat = UEF_ANSI) As Boolean
                                 
     Dim hFile As Long
@@ -477,7 +477,7 @@ Public Function UEFSaveTextFile(ByVal FileName As String, _
     Dim byTemp As Byte
     
     '判断fmt范围
-    If IsAppend And (fmt = UEF_Auto) Then
+    If IsAppend And (fmt = UEF_AUTO) Then
     Else
         If fmt < [_UEF_Min] Or fmt > [_UEF_Max] Then
             GoTo FunEnd
@@ -495,12 +495,12 @@ Public Function UEFSaveTextFile(ByVal FileName As String, _
     If nFileSize = 0 And nNumRead = 0 Then '文件大小为0字节
          IsAppend = False '此时需要写BOM标志
     End If
-    If fmt = UEF_Auto Then
+    If fmt = UEF_AUTO Then
         fmt = DefFmt
     End If
     
     '判断BOM
-    If IsAppend And (fmt = UEF_Auto) Then
+    If IsAppend And (fmt = UEF_AUTO) Then
         dwFirst = 0
         Call ReadFile(hFile, dwFirst, 4, nNumRead, ByVal 0&)
         cbBOM = UEFCheckBOM(dwFirst, fmt)

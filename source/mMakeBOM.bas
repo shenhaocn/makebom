@@ -1,204 +1,80 @@
 Attribute VB_Name = "mMakeBOM"
 Option Explicit
 
-Function CreateAllBOM() As Boolean
+'BOMÀàÐÍ
+Public Enum BomType
+
+BOM_ALL = 0
+BOM_NCDBG
+BOM_NONE
+
+BOM_Ô¤
+BOM_ÁìÁÏ
+BOM_µ÷ÊÔ
+BOM_Éú²ú
+
+End Enum
+
+'BMFÎÄ¼þ±àÂë¸ñÊ½
+'Item Number Part Number Value   Quantity    Part Reference  PCB Footprint Mount Type Description TP1 TP2 TP3
+'0-----------1-----------2-------3-----------4---------------5-------------6----------7-----------8---9--10--
+'BMF_ItemNum=0
+'BMF_PartNum
+'BMF_Value
+'BMF_Quantity
+'BMF_PartRef
+'BMF_PcbFB
+'BMF_MountType
+'BMF_Description
+'BMF_TP1
+'BMF_TP2
+'BMF_TP3ÿ
+
+Function xlsInsert(xlSheet As Excel.Worksheet, ItemNum As Integer, Row As Long, insertStr() As String, OrgEnable As Boolean)
     
-    On Error GoTo ErrorHandle
+    'Ê×ÐÐ²»ÐèÒª¼ÓÈë
+    If ItemNum > 1 Then
+        xlSheet.Rows(Row + ItemNum & ":" & Row + ItemNum).Insert
+        xlSheet.Rows(Row + ItemNum & ":" & Row + ItemNum).Interior.Pattern = xlNone 'È¥³ýÑÕÉ«µÈ¸ñÊ½ ÐÞÕýÏÔÊ¾bug
+    End If
     
-    Process 54, "×¼±¸Éú³ÉÁìÁÏBOM¡¢µ÷ÊÔBOM¡¢Éú²úBOM..."
-        
-    Dim xlApp As Excel.Application
-    Dim PCBA_BOM_xlBook As Excel.Workbook, NCDBBOM_xlBook As Excel.Workbook
-    Dim ÁìÁÏBOM_xlBook As Excel.Workbook, µ÷ÊÔBOM_xlBook As Excel.Workbook, Éú²úBOM_xlBook As Excel.Workbook
+    xlSheet.Cells(ItemNum + Row, 1) = ItemNum
+    xlSheet.Cells(ItemNum + Row, 2) = insertStr(BMF_PartNum)
+    xlSheet.Cells(ItemNum + Row, 3) = insertStr(BMF_Description)
+    xlSheet.Cells(ItemNum + Row, 5) = insertStr(BMF_Quantity)
+    xlSheet.Cells(ItemNum + Row, 6) = insertStr(BMF_PartRef)
+    xlSheet.Cells(ItemNum + Row, 7) = insertStr(BMF_PcbFB)
+    xlSheet.Cells(ItemNum + Row, 8) = insertStr(BMF_Value)
     
-    Dim PCBA_BOM_xlSheet As Excel.Worksheet, NCDBBOM_xlSheet As Excel.Worksheet
-    Dim ÁìÁÏBOM_xlSheet As Excel.Worksheet, µ÷ÊÔBOM_xlSheet As Excel.Worksheet, Éú²úBOM_xlSheet As Excel.Worksheet
-    
-    Set xlApp = CreateObject("Excel.Application")
-    xlApp.Visible = False
-    
-    Process 55, "Éú³ÉÁìÁÏBOM..."
-    'ÁìÁÏBOM
-    Set ÁìÁÏBOM_xlBook = xlApp.Workbooks.Open(SaveAsPath & "_PCBA_BOM.xls")
-    Set ÁìÁÏBOM_xlSheet = ÁìÁÏBOM_xlBook.Worksheets(1)
-    ÁìÁÏBOM_xlBook.SaveAs (SaveAsPath & "_ÁìÁÏBOM.xls")
-    
-    
-    Process 56, "Éú³ÉÉú²úBOM..."
-    'Éú²úBOM
-    Set Éú²úBOM_xlBook = xlApp.Workbooks.Open(SaveAsPath & "_PCBA_BOM.xls")
-    Set Éú²úBOM_xlSheet = Éú²úBOM_xlBook.Worksheets(1)
-    Éú²úBOM_xlBook.SaveAs (SaveAsPath & "_Éú²úBOM.xls")
-    
-    Set NCDBBOM_xlBook = xlApp.Workbooks.Open(SaveAsPath & "_NC_DBG.xls")
-    Set NCDBBOM_xlSheet = NCDBBOM_xlBook.Worksheets(1)
-    
-    Set PCBA_BOM_xlBook = xlApp.Workbooks.Open(SaveAsPath & "_PCBA_BOM.xls")
-    Set PCBA_BOM_xlSheet = PCBA_BOM_xlBook.Worksheets(1)
-    
-    Dim rngSMT          As Range
-    Dim rngLEAD         As Range
-    Dim rngOther        As Range
-    
-    Dim rngNC           As Range
-    Dim rngDB           As Range
-    Dim rngDBNC         As Range
-    
-    Dim NcPartNum       As Integer
-    Dim DbgPartNum      As Integer
-    Dim DbNcPartNum     As Integer
-    Dim LeadPartNum     As Integer
-    Dim SmtPartNum      As Integer
-    Dim OtherPartNum    As Integer
-    NcPartNum = PartNum(0)
-    DbgPartNum = PartNum(1)
-    DbNcPartNum = PartNum(2)
-    LeadPartNum = PartNum(3)
-    SmtPartNum = PartNum(4)
-    OtherPartNum = PartNum(5)
-    
-    '¶¨Î»¸÷ÖÖÔª¼þÎ»ÖÃ
-    With NCDBBOM_xlSheet.Cells
-        Set rngNC = .Find("NCÔª¼þ", lookin:=xlValues)
-        Set rngDB = .Find("DBGÔª¼þ", lookin:=xlValues)
-        Set rngDBNC = .Find("DBG_NCÔª¼þ", lookin:=xlValues)
-        If rngNC Is Nothing Or rngDB Is Nothing Then
-            MsgBox "NC_DBGÎÄ¼þ´íÎó", vbCritical + vbMsgBoxSetForeground + vbOKOnly, "´íÎó"
-            GoTo ErrorHandle
-        End If
-    End With
-    
-    '¶¨Î»¸÷ÖÖÔª¼þÎ»ÖÃ
-    With PCBA_BOM_xlSheet.Cells
-        Set rngSMT = .Find("SMTÔª¼þ", lookin:=xlValues)
-        Set rngLEAD = .Find("DIPÔª¼þ", lookin:=xlValues)
-        Set rngOther = .Find("ÆäËûÔª¼þ", lookin:=xlValues)
-        If rngSMT Is Nothing Or rngLEAD Is Nothing Or rngOther Is Nothing Then
-            MsgBox "PCBA_BOMÔØÈë´íÎó", vbCritical + vbMsgBoxSetForeground + vbOKOnly, "´íÎó"
-            GoTo ErrorHandle
-        End If
-    End With
-    
-    '========================================================
-    '¶ÁÈ¡¿âÐÅÏ¢
-    'LEAD ¿â
-    Dim leadLibInfo()      As String
-    Dim smtLibInfo()       As String
-    Dim IgLibInfo()        As String
-    leadLibInfo = ReadLibs(LIB_LEAD)
-    smtLibInfo = ReadLibs(LIB_SMD)
-    IgLibInfo = ReadLibs(LIB_NONE)
-    
-    Dim i       As Integer
-    Dim rngNum  As Range
-    
-    'Éú³ÉÁìÁÏBOM
-    For i = 1 To DbgPartNum
-        'MsgBox NCDBBOM_xlSheet.Cells(i + rngDB.Row, 2)
-        Process i * 10 / DbgPartNum + 57, "·ÖÎöÎïÁÏ---[" & NCDBBOM_xlSheet.Cells(i + rngDB.Row, 2) & "]..."
-        
-        If NCDBBOM_xlSheet.Cells(i + rngDB.Row, 2) = "" Then
-            MsgBox "DBGÔª¼þÁÏºÅ²»´æÔÚ£¬NC_DBG_BOMÖÐDBGÔª¼þÐòºÅÎª" & i, vbInformation + vbMsgBoxSetForeground + vbOKOnly, "ÌáÊ¾"
-            GoTo ErrorHandle
+    'ÊÇ·ñÌí¼Ó¿â´æÐÅÏ¢£¿
+    If OrgEnable = True Then
+        If insertStr(BMF_TP1) = "-" Then
+            xlSheet.Cells(ItemNum + Row, 9) = ""
         Else
-            If IsNumeric(NCDBBOM_xlSheet.Cells(i + rngDB.Row, 2)) = True Then
-                'MsgBox NCDBBOM_xlSheet.Cells(i + rngDB.Row, 2)
-                With ÁìÁÏBOM_xlSheet.Cells
-                    Set rngNum = .Find(NCDBBOM_xlSheet.Cells(i + rngDB.Row, 2), lookin:=xlValues)
-                    If rngNum Is Nothing Then
-                        If QueryLib(smtLibInfo, NCDBBOM_xlSheet.Cells(i + rngDB.Row, 7)) Then
-                            SmtPartNum = SmtPartNum + 1
-                            CopyLine ÁìÁÏBOM_xlSheet, rngSMT.Row + SmtPartNum, NCDBBOM_xlSheet, i + rngDB.Row, 8, SmtPartNum
-                        ElseIf QueryLib(leadLibInfo, NCDBBOM_xlSheet.Cells(i + rngDB.Row, 7)) Then
-                            LeadPartNum = LeadPartNum + 1
-                            CopyLine ÁìÁÏBOM_xlSheet, rngLEAD.Row + LeadPartNum, NCDBBOM_xlSheet, i + rngDB.Row, 8, LeadPartNum
-                        Else
-                            OtherPartNum = OtherPartNum + 1
-                            CopyLine ÁìÁÏBOM_xlSheet, rngOther.Row + OtherPartNum, NCDBBOM_xlSheet, i + rngDB.Row, 8, OtherPartNum
-                        End If
-                    Else
-                        ÁìÁÏBOM_xlSheet.Cells(rngNum.Row, 5) = CInt(ÁìÁÏBOM_xlSheet.Cells(rngNum.Row, 5)) + CInt(NCDBBOM_xlSheet.Cells(i + rngDB.Row, 5))
-                        ÁìÁÏBOM_xlSheet.Cells(rngNum.Row, 5).Font.ColorIndex = 5
-                        ÁìÁÏBOM_xlSheet.Cells(rngNum.Row, 6) = ÁìÁÏBOM_xlSheet.Cells(rngNum.Row, 6) + " " + NCDBBOM_xlSheet.Cells(i + rngDB.Row, 6)
-                        ÁìÁÏBOM_xlSheet.Cells(rngNum.Row, 6).Font.ColorIndex = 5
-                    End If
-                End With
+            xlSheet.Cells(ItemNum + Row, 9) = insertStr(BMF_TP1)
+            If insertStr(BMF_TP1) = "0" Or InStr(insertStr(BMF_TP1), "-") = 1 Then
+                xlSheet.Cells(ItemNum + Row, 9).Interior.Color = 52479 'ÒÔÇ¿µ÷µÄÑÕÉ«ÏÔÊ¾
             End If
         End If
-    Next i
-     
-     'Éú³ÉÉú²úBOM
-    For i = 1 To DbNcPartNum
-        Process i * 10 / DbNcPartNum + 68, "·ÖÎöÎïÁÏ---[" & NCDBBOM_xlSheet.Cells(i + rngDBNC.Row, 2) & "]..."
-    
-        If NCDBBOM_xlSheet.Cells(i + rngDBNC.Row, 2) = "" Then
-            MsgBox "DBG_NCÔª¼þÁÏºÅ²»´æÔÚ£¬NC_DBG_BOMÖÐDBG_NCÔª¼þÐòºÅÎª" & i, vbInformation + vbMsgBoxSetForeground + vbOKOnly, "ÌáÊ¾"
-            GoTo ErrorHandle
+        
+        If insertStr(BMF_TP2) = "-" Then
+            xlSheet.Cells(ItemNum + Row, 10) = ""
         Else
-            If IsNumeric(NCDBBOM_xlSheet.Cells(i + rngDBNC.Row, 2)) = True Then
-                With Éú²úBOM_xlSheet.Cells
-                    Set rngNum = .Find(NCDBBOM_xlSheet.Cells(i + rngDBNC.Row, 2), lookin:=xlValues)
-                    If rngNum Is Nothing Then
-                        If QueryLib(smtLibInfo, NCDBBOM_xlSheet.Cells(i + rngDBNC.Row, 7)) Then
-                            SmtPartNum = SmtPartNum + 1
-                            CopyLine Éú²úBOM_xlSheet, rngSMT.Row + SmtPartNum, NCDBBOM_xlSheet, i + rngDBNC.Row, 8, SmtPartNum
-                        ElseIf QueryLib(leadLibInfo, NCDBBOM_xlSheet.Cells(i + rngDBNC.Row, 7)) Then
-                            LeadPartNum = LeadPartNum + 1
-                            CopyLine Éú²úBOM_xlSheet, rngLEAD.Row + LeadPartNum, NCDBBOM_xlSheet, i + rngDBNC.Row, 8, LeadPartNum
-                        Else
-                            OtherPartNum = OtherPartNum + 1
-                            CopyLine Éú²úBOM_xlSheet, rngOther.Row + OtherPartNum, NCDBBOM_xlSheet, i + rngDBNC.Row, 8, OtherPartNum
-                        End If
-                    Else
-                        Éú²úBOM_xlSheet.Cells(rngNum.Row, 5) = CInt(Éú²úBOM_xlSheet.Cells(rngNum.Row, 5)) + CInt(NCDBBOM_xlSheet.Cells(i + rngDBNC.Row, 5))
-                        Éú²úBOM_xlSheet.Cells(rngNum.Row, 5).Font.ColorIndex = 5
-                        Éú²úBOM_xlSheet.Cells(rngNum.Row, 6) = Éú²úBOM_xlSheet.Cells(rngNum.Row, 6) + " " + NCDBBOM_xlSheet.Cells(i + rngDBNC.Row, 6)
-                        Éú²úBOM_xlSheet.Cells(rngNum.Row, 6).Font.ColorIndex = 5
-                    End If
-                End With
+            xlSheet.Cells(ItemNum + Row, 10) = insertStr(BMF_TP2)
+            If insertStr(BMF_TP2) = "0" Or InStr(insertStr(BMF_TP2), "-") = 1 Then
+                xlSheet.Cells(ItemNum + Row, 10).Interior.Color = 52479 'ÒÔÇ¿µ÷µÄÑÕÉ«ÏÔÊ¾
             End If
         End If
-    Next i
-    
-    Process 78, "±£´æÁìÁÏBOM¡¢Éú²úBOM..."
-    
-    ÁìÁÏBOM_xlBook.Save
-    Éú²úBOM_xlBook.Save
-    ÁìÁÏBOM_xlBook.Close (True) '¹Ø±Õ¹¤×÷²¾
-    Éú²úBOM_xlBook.Close (True)
-    
-    Process 79, "Éú³Éµ÷ÊÔBOM..."
-    'µ÷ÊÔBOMÐèÒªÔÚÁìÁÏBOMÉÏ×ö¸ñÊ½ÐÞ¸Ä£¬±ãÓÚ´òÓ¡
-    Set µ÷ÊÔBOM_xlBook = xlApp.Workbooks.Open(SaveAsPath & "_ÁìÁÏBOM.xls")
-    Set µ÷ÊÔBOM_xlSheet = µ÷ÊÔBOM_xlBook.Worksheets(1)
-    µ÷ÊÔBOM_xlBook.SaveAs (SaveAsPath & "_µ÷ÊÔBOM.xls")
-    
-    Process 80, "ÐÞ¸Äµ÷ÊÔBOMµÄ´òÓ¡¸ñÊ½£¬ÒÔ±ãÓÚ´òÓ¡..."
-    With µ÷ÊÔBOM_xlSheet.PageSetup
-        .Orientation = xlLandscape
-        .PaperSize = xlPaperA4
-        .Zoom = 80
-    End With
-
-    Process 81, "±£´æµ÷ÊÔBOM..."
-    
-    µ÷ÊÔBOM_xlBook.Save
-    µ÷ÊÔBOM_xlBook.Close (True)
-    xlApp.Quit '½áÊøEXCEL¶ÔÏó
-    Set xlApp = Nothing 'ÊÍ·ÅxlApp¶ÔÏó
-    
-    CreateAllBOM = True
-    Exit Function
-
-ErrorHandle:
-    ÁìÁÏBOM_xlBook.Close (True) '¹Ø±Õ¹¤×÷²¾
-    Éú²úBOM_xlBook.Close (True)
-    µ÷ÊÔBOM_xlBook.Close (True)
-    
-    xlApp.Quit '½áÊøEXCEL¶ÔÏó
-    Set xlApp = Nothing 'ÊÍ·ÅxlApp¶ÔÏó
-    
-    CreateAllBOM = False
+            
+        If insertStr(BMF_TP3) = "-" Then
+            xlSheet.Cells(ItemNum + Row, 11) = ""
+        Else
+            xlSheet.Cells(ItemNum + Row, 11) = insertStr(BMF_TP3)
+            If insertStr(BMF_TP3) = "0" Or InStr(insertStr(BMF_TP3), "-") = 1 Then
+                xlSheet.Cells(ItemNum + Row, 11).Interior.Color = 52479 'ÒÔÇ¿µ÷µÄÑÕÉ«ÏÔÊ¾
+            End If
+        End If
+    End If
     
 End Function
 
@@ -211,6 +87,367 @@ Function CopyLine(xlSheetTo As Excel.Worksheet, RowTo As Integer, xlSheetFrom As
     Next i
     xlSheetTo.Rows(RowTo & ":" & RowTo).Font.ColorIndex = 5
 End Function
+
+'¸ù¾ÝÑ¡Ïî´´½¨BOM ²¢µ÷Õû¸ñÊ½ ÎªÌî³äÊý¾Ý×ö×¼±¸
+Function ExcelCreate(bt_value As BomType)
+
+    On Error GoTo ErrorHandle
+    
+    Dim xlApp As Excel.Application
+    Dim xlBook As Excel.Workbook
+    Dim xlSheet As Excel.Worksheet
+    
+    Set xlApp = CreateObject("Excel.Application")
+    xlApp.Visible = False
+    
+    '=====================================================================================
+    'Ô¤BOM£ºCaptureÖÐµ¼³öµÄBOM³ýNoneÔª¼þ¡¢NCÔª¼þ¡¢DBGÔª¼þ¡¢DBG_NCÔª¼þÖ®ÍâµÄËùÓÐÔª¼þµÄ¼¯ºÏ¡£
+    '=====================================================================================
+    If bt_value = BOM_Ô¤ Then
+        'PCBA_BOM
+        Set xlBook = xlApp.Workbooks.Open(App.Path & "\template\PCBA_BOM_template.xls")
+        Set xlSheet = xlBook.Worksheets(1)
+        xlBook.SaveAs (SaveAsPath & "_Ô¤BOM_BMF.xls")
+        
+        xlBook.Close (True) '¹Ø±Õ¹¤×÷²¾
+    End If
+    
+    '=====================================================================================
+    'NC_DBGÔª¼þxls
+    '=====================================================================================
+    If bt_value = BOM_NCDBG Then
+        Set xlBook = xlApp.Workbooks.Open(App.Path & "\template\NC_DBG_template.xls")
+        Set xlSheet = xlBook.Worksheets(1)
+        xlBook.SaveAs (SaveAsPath & "_NC_DBG.xls")
+        
+        xlBook.Close (True)
+    End If
+    
+    '=====================================================================================
+    'NoneÔª¼þxls
+    '=====================================================================================
+    If bt_value = BOM_NONE Then
+    
+        Dim rngNC           As Range
+        Dim rngDB           As Range
+        Dim rngDBNC         As Range
+        
+        Set xlBook = xlApp.Workbooks.Open(App.Path & "\template\NC_DBG_template.xls")
+        xlBook.SaveAs (SaveAsPath & "_None_PartRef.xls")
+        xlBook.Worksheets(1).Name = "NoneÔª¼þ"
+        
+        Set xlSheet = xlBook.Worksheets(1)
+        
+        With xlSheet.Cells
+            Set rngNC = .Find("NCÔª¼þ", lookin:=xlValues)
+            Set rngDB = .Find("DBGÔª¼þ", lookin:=xlValues)
+            Set rngDBNC = .Find("DBG_NCÔª¼þ", lookin:=xlValues)
+            If rngNC Is Nothing Or rngDB Is Nothing Then
+                MsgBox "NC_DBGÄ£°å´íÎó", vbCritical + vbMsgBoxSetForeground + vbOKOnly, "´íÎó"
+                End
+            End If
+        End With
+        
+        'µ÷ÕûNoneShleet
+        xlSheet.Cells(rngNC.Row, 2) = "None"
+        xlSheet.Rows(rngDB.Row & ":" & rngDBNC.Row + 1).Delete
+    
+        xlBook.Close (True)
+    End If
+    
+    '=====================================================================================
+    'ÁìÁÏBOM £º Ô¤BOM + DBGÔª¼þ - ÐÂ´òÑùÎïÁÏ+ ÎïÁÏ¿â´æÐÅÏ¢¡£
+    '=====================================================================================
+    If bt_value = BOM_ÁìÁÏ Then
+        
+        Set xlBook = xlApp.Workbooks.Open(App.Path & "\template\PCBA_BOM_template.xls")
+        Set xlSheet = xlBook.Worksheets(1)
+        xlBook.SaveAs (SaveAsPath & "_ÁìÁÏBOM.xls")
+         
+        'µ÷ÕûÁìÁÏBOM¸ñÊ½
+        'ÔÚÁìÁÏBOMÖÐ²åÈëÁÐ(I£ºTP1¿â´æ) (J£ºTP2¿â´æ) (K£ºTP3¿â´æ)£¨ÐèÑ¡Ôñ¿â´æÐÅÏ¢£©
+        'µ÷Õû±í¸ñÊÊÓ¦ÐÂÌí¼ÓµÄÄÚÈÝ
+        xlSheet.Columns("C:C").ColumnWidth = 45
+        xlSheet.Columns("G:G").ColumnWidth = 12
+        xlSheet.Columns("H:H").ColumnWidth = 12
+        
+        xlSheet.Columns("H:H").Copy
+        xlSheet.Columns("I:I").PasteSpecial Paste:=xlPasteFormats, Operation:=xlNone, _
+                                              SkipBlanks:=False, Transpose:=False
+        xlSheet.Columns("I:I").Copy
+        xlSheet.Columns("J:J").PasteSpecial Paste:=xlPasteFormats, Operation:=xlNone, _
+                                              SkipBlanks:=False, Transpose:=False
+        xlSheet.Columns("K:K").PasteSpecial Paste:=xlPasteFormats, Operation:=xlNone, _
+                                              SkipBlanks:=False, Transpose:=False
+        xlApp.CutCopyMode = False
+        
+        'Ìî³äÊý¾Ý
+        xlSheet.Cells(5, 9) = "TP1¿â´æ"
+        xlSheet.Cells(5, 10) = "TP2¿â´æ"
+        xlSheet.Cells(5, 11) = "TP3¿â´æ"
+
+        xlSheet.Cells(5, 9).Select
+         
+        xlBook.Close (True)
+    End If
+    
+    '=====================================================================================
+    'µ÷ÊÔBOM £º Ô¤BOM + DBGÔª¼þ ¼¯ºÏ¡£
+    '=====================================================================================
+    If bt_value = BOM_µ÷ÊÔ Then
+        
+        Set xlBook = xlApp.Workbooks.Open(App.Path & "\template\PCBA_BOM_template.xls")
+        Set xlSheet = xlBook.Worksheets(1)
+        xlSheet.SaveAs (SaveAsPath & "_µ÷ÊÔBOM.xls")
+        
+        'µ÷Õû´òÓ¡¸ñÊ½
+        With xlSheet.PageSetup
+            .Orientation = xlLandscape
+            .PaperSize = xlPaperA4
+            .Zoom = 80
+        End With
+        
+        xlBook.Close (True)
+    End If
+    
+    '=====================================================================================
+    'Éú²úBOM £º Ô¤BOM + DBG_NCÔª¼þ ¼¯ºÏ
+    '=====================================================================================
+    If bt_value = BOM_Éú²ú Then
+
+        Set xlBook = xlApp.Workbooks.Open(App.Path & "\template\PCBA_BOM_template.xls")
+        Set xlSheet = xlBook.Worksheets(1)
+        xlBook.SaveAs (SaveAsPath & "_Éú²úBOM.xls")
+        
+        xlBook.Close (True)
+    End If
+    
+    xlApp.Quit '½áÊøEXCEL¶ÔÏó
+    Set xlApp = Nothing 'ÊÍ·ÅxlApp¶ÔÏó
+    Exit Function
+    
+ErrorHandle:
+    
+    xlApp.Quit '½áÊøEXCEL¶ÔÏó
+    Set xlApp = Nothing 'ÊÍ·ÅxlApp¶ÔÏó
+    
+    MsgBox "´´½¨BOMÖÐ¼äÎÄ¼þÊ±·¢ÉúÒì³£", vbCritical + vbMsgBoxSetForeground + vbOKOnly, "´íÎó"
+    
+
+End Function
+
+'Ìî³äÏàÓ¦µÄÊý¾Ý
+
+'=====================================================================================
+'1.Ô¤BOM£ºCaptureÖÐµ¼³öµÄBOM³ýNoneÔª¼þ¡¢NCÔª¼þ¡¢DBGÔª¼þ¡¢DBG_NCÔª¼þÖ®ÍâµÄËùÓÐÔª¼þµÄ¼¯ºÏ¡£
+'2.NC_DBGÔª¼þxls
+'3.NoneÔª¼þxls
+'4.ÁìÁÏBOM £º Ô¤BOM + DBGÔª¼þ - ÐÂ´òÑùÎïÁÏ+ ÎïÁÏ¿â´æÐÅÏ¢
+'5.µ÷ÊÔBOM £º Ô¤BOM + DBGÔª¼þ ¼¯ºÏ
+'6.Éú²úBOM £º Ô¤BOM + DBG_NCÔª¼þ ¼¯ºÏ
+'ÿ
+'Ôª¼þÀàÐÍ £º ÆÕÍ¨Ôª¼þ NcDbgÔª¼þ NoneÔª¼þ ´òÑùÎïÁÏ ÿ
+'=====================================================================================
+Function CreateBOM(bt_value As BomType) As Boolean
+    
+    On Error GoTo ErrorHandle
+    
+    Dim xlApp As Excel.Application
+    Dim xlBook As Excel.Workbook
+    Dim xlSheet As Excel.Worksheet
+    
+    Set xlApp = CreateObject("Excel.Application")
+    xlApp.Visible = False
+     
+    '´ò¿ªÏàÓ¦µÄÎÄ¼þ
+    Select Case bt_value
+    Case BOM_NCDBG:
+        Set xlBook = xlApp.Workbooks.Open(SaveAsPath & "_NC_DBG.xls")
+    Case BOM_NONE:
+        Set xlBook = xlApp.Workbooks.Open(SaveAsPath & "_None_PartRef.xls")
+    Case BOM_Ô¤:
+        Set xlBook = xlApp.Workbooks.Open(SaveAsPath & "_Ô¤BOM_BMF.xls")
+    Case BOM_ÁìÁÏ:
+        Set xlBook = xlApp.Workbooks.Open(SaveAsPath & "_ÁìÁÏBOM.xls")
+    Case BOM_µ÷ÊÔ:
+        Set xlBook = xlApp.Workbooks.Open(SaveAsPath & "_µ÷ÊÔBOM.xls")
+    Case BOM_Éú²ú:
+        Set xlBook = xlApp.Workbooks.Open(SaveAsPath & "_Éú²úBOM.xls")
+    Case Else
+        GoTo ErrorHandle
+    End Select
+     
+    Set xlSheet = xlBook.Worksheets(1)
+    
+    '¶¨Î»¸÷ÖÖÔª¼þÎ»ÖÃ
+    Dim rngPos1       As Range 'ÔÚBOMÎÄ¼þÖÐ±íÊ¾"SMTÔª¼þ"Î»ÖÃ ÔÚDBG¡¢NoneÔª¼þ´ú±í"NCÔª¼þ"Î»ÖÃ
+    Dim rngPos2       As Range 'ÔÚBOMÎÄ¼þÖÐ±íÊ¾"DIPÔª¼þ"Î»ÖÃ ÔÚDBG¡¢NoneÔª¼þ´ú±í"DBGÔª¼þ"Î»ÖÃ
+    Dim rngPos3       As Range 'ÔÚBOMÎÄ¼þÖÐ±íÊ¾"ÆäËûÔª¼þ"Î»ÖÃ ÔÚDBG¡¢NoneÔª¼þ´ú±í"DBG_NCÔª¼þ"Î»ÖÃ
+    With xlSheet.Cells
+        
+        Select Case bt_value
+        Case BOM_NCDBG:
+            Set rngPos1 = .Find("NCÔª¼þ", lookin:=xlValues)
+            Set rngPos2 = .Find("DBGÔª¼þ", lookin:=xlValues)
+            Set rngPos3 = .Find("DBG_NCÔª¼þ", lookin:=xlValues)
+            
+        Case BOM_NONE:
+            Set rngPos1 = .Find("None", lookin:=xlValues)
+            Set rngPos2 = .Find("None", lookin:=xlValues)
+            Set rngPos3 = .Find("None", lookin:=xlValues)
+    
+        Case BOM_Ô¤, BOM_ÁìÁÏ, BOM_µ÷ÊÔ, BOM_Éú²ú:
+            Set rngPos1 = .Find("SMTÔª¼þ", lookin:=xlValues)
+            Set rngPos2 = .Find("DIPÔª¼þ", lookin:=xlValues)
+            Set rngPos3 = .Find("ÆäËûÔª¼þ", lookin:=xlValues)
+            
+        Case Else
+            GoTo ErrorHandle
+        End Select
+        
+        If rngPos1 Is Nothing Or rngPos2 Is Nothing Or rngPos3 Is Nothing Then
+            MsgBox "Ä£°å´íÎó-Ôª¼þÎ»ÖÃ¶¨Î»´íÎó", vbCritical + vbMsgBoxSetForeground + vbOKOnly, "´íÎó"
+            GoTo ErrorHandle
+        End If
+    End With
+    
+    
+    '=======================================================
+    '¿ªÊ¼¶ÁÈ¡bmfÎÄ¼þ²¢Ìî³äÏàÓ¦µÄÄÚÈÝ
+    '=======================================================
+    Dim bmfBom          As String
+    Dim bmfBomLine()    As String
+    Dim bmfAtom()       As String
+    
+    Dim ItemNum1        As Integer 'NCÔª¼þ »ò NoneÔª¼þ »ò SMTÔª¼þÊý
+    Dim ItemNum2        As Integer 'DBGÔª¼þ »ò NoneÔª¼þ »ò DIPÔª¼þÊý
+    Dim ItemNum3        As Integer 'DBG_NCÔª¼þ »ò NoneÔª¼þ »ò ÆäËûÔª¼þÊý
+    
+    Dim i               As Integer
+    Dim OrgEnable       As Boolean
+    
+    ItemNum1 = 0
+    ItemNum2 = 0
+    ItemNum3 = 0
+    
+    'ÊÇ·ñÌí¼Ó¿â´æÐÅÏ¢£¿
+    If bt_value = BOM_ÁìÁÏ Then
+        OrgEnable = True
+    Else
+        OrgEnable = False
+    End If
+    
+    If Dir(BmfFilePath) = "" Then
+        Exit Function
+    End If
+    
+    bmfBom = GetFileContents(BmfFilePath)
+    
+    bmfBomLine = Split(bmfBom, vbCrLf)
+
+    '±éÀúbmfÎÄ¼þ
+    For i = 1 To UBound(bmfBomLine) - 1
+        bmfAtom = Split(bmfBomLine(i), vbTab)
+        
+        If bmfAtom(BMF_PcbFB) = "" Or bmfAtom(BMF_Value) = "" Then
+                MsgBox "µÚ" & bmfAtom(BMF_ItemNum) & "ÏîÔª¼þÐÅÏ¢²»ÍêÕû", vbExclamation + vbMsgBoxSetForeground + vbOKOnly, "¾¯¸æ"
+                GoTo ErrorHandle
+        End If
+        
+        If InStr(bmfAtom(BMF_Value), "_DBG_NC") > 0 Or bmfAtom(BMF_Value) = "DBG_NC" Then
+            If bt_value = BOM_NCDBG Then
+                'DBG_NCÔª¼þ
+                ItemNum3 = ItemNum3 + 1
+                xlsInsert xlSheet, ItemNum3, rngPos3.Row, bmfAtom, OrgEnable
+            End If
+            
+        ElseIf InStr(bmfAtom(BMF_Value), "_DBG") > 0 Or bmfAtom(BMF_Value) = "DBG" Then
+            If bt_value = BOM_NCDBG Then
+                'DBGÔª¼þ
+                ItemNum2 = ItemNum2 + 1
+                xlsInsert xlSheet, ItemNum2, rngPos2.Row, bmfAtom, OrgEnable
+            End If
+           
+        ElseIf InStr(bmfAtom(BMF_Value), "_NC") > 0 Or bmfAtom(BMF_Value) = "NC" Then
+            If bt_value = BOM_NCDBG Then
+                'NCÔª¼þ
+                ItemNum1 = ItemNum1 + 1
+                xlsInsert xlSheet, ItemNum1, rngPos1.Row, bmfAtom, OrgEnable
+            End If
+            
+        Else
+            If bt_value = BOM_NONE Then
+                If bmfAtom(BMF_MountType) = "N" Then
+                    ItemNum1 = ItemNum1 + 1
+                    xlsInsert xlSheet, ItemNum1, rngPos1.Row, bmfAtom, OrgEnable
+                End If
+            End If
+            
+            If bt_value = BOM_µ÷ÊÔ Or BOM_ÁìÁÏ Or BOM_Éú²ú Or BOM_Ô¤ Then
+                '========================================================
+                'ÆÕÍ¨Ôª¼þ Çø·ÖÔª¼þÌù×°ÀàÐÍ ÏÈ²»Çø·ÖÕâËÄ¸öBOM ºóÐøµ÷Õû
+                Select Case bmfAtom(BMF_MountType)
+                Case "S":
+                    ItemNum1 = ItemNum1 + 1
+                    xlsInsert xlSheet, ItemNum1, rngPos1.Row, bmfAtom, OrgEnable
+                    
+                Case "S+":
+                    ItemNum1 = ItemNum1 + 1
+                    xlsInsert xlSheet, ItemNum1, rngPos1.Row, bmfAtom, OrgEnable
+                    xlSheet.Rows((rngPos1.Row + ItemNum1) & ":" & (rngPos1.Row + ItemNum1)).Interior.Color = 16737792
+                    
+                Case "L":
+                    ItemNum2 = ItemNum2 + 1
+                    xlsInsert xlSheet, ItemNum2, rngPos2.Row, bmfAtom, OrgEnable
+                    
+                Case "N":
+                    'Do Nothing
+                    
+                Case Else
+                    '¿âÎÄ¼þÖÐÃ»ÓÐ²éµ½·â×°£¬¾Ü¾øÉú³ÉBOM
+                    MsgBox "Î´Öª·â×°[" & bmfAtom(BMF_PcbFB) & "]£¬Çë¸üÐÂ¿âÎÄ¼þ£¡"
+                    GoTo ErrorHandle
+                End Select
+            End If
+            
+        End If
+        
+    Next i
+    
+    If bt_value = BOM_µ÷ÊÔ Or BOM_ÁìÁÏ Or BOM_Éú²ú Or BOM_Ô¤ Then
+        'ÐÞ¸Ä»úÐÍÃû³Æ
+        xlSheet.Cells(2, 1) = "»úÐÍ£º  " & MainForm.ItemNameText.Text & "            PCBA °æ±¾£º                       °ë³ÉÆ·±àºÅ£º"
+        If MainForm.ItemNameText.Text = "" Then
+            xlSheet.Cells(2, 1).Font.ColorIndex = 5
+        End If
+        
+    End If
+    
+    'µ÷ÕûÇø·Ö¸÷ÖÖ²»Í¬µÄBOM
+    'Ô¤BOM£ºCaptureÖÐµ¼³öµÄBOM³ýNoneÔª¼þ¡¢NCÔª¼þ¡¢DBGÔª¼þ¡¢DBG_NCÔª¼þÖ®ÍâµÄËùÓÐÔª¼þµÄ¼¯ºÏ
+    'ÁìÁÏBOM £º Ô¤BOM + DBGÔª¼þ - ÐÂ´òÑùÎïÁÏ+ ÎïÁÏ¿â´æÐÅÏ¢
+    'µ÷ÊÔBOM £º Ô¤BOM + DBGÔª¼þ ¼¯ºÏ
+    'Éú²úBOM £º Ô¤BOM + DBG_NCÔª¼þ ¼¯ºÏ
+    'Select Case bt_value
+    
+    'End Select
+     
+    xlBook.Close (True) '¹Ø±Õ¹¤×÷²¾
+
+    xlApp.Quit '½áÊøEXCEL¶ÔÏó
+    Set xlApp = Nothing 'ÊÍ·ÅxlApp¶ÔÏó
+    
+    Exit Function
+    
+ErrorHandle:
+
+    xlApp.Quit '½áÊøEXCEL¶ÔÏó
+    Set xlApp = Nothing 'ÊÍ·ÅxlApp¶ÔÏó
+    
+    MsgBox "Éú³ÉBOMÖÐ¼äÎÄ¼þÊ±·¢ÉúÒì³£", vbCritical + vbMsgBoxSetForeground + vbOKOnly, "´íÎó"
+    
+End Function
+
 
 Function BomAdjust() As Boolean
     On Error GoTo ErrorHandle
@@ -368,154 +605,5 @@ Function ReNum(xlSheet As Excel.Worksheet) As Boolean
     
 End Function
 
-Function ImportTSV(TmpBomFilePath As String, ProcNum As Integer) As Boolean
-
-    Process ProcNum, "·ÖÎötsvÎÄ¼þÐÅÏ¢..."
-    
-    On Error GoTo ErrorHandle
-    
-    Dim MSxlApp As Excel.Application
-    Dim MSxlBook As Excel.Workbook
-    Dim MSxlSheet As Excel.Worksheet
-    
-    Set MSxlApp = CreateObject("Excel.Application") '´´½¨EXCEL¶ÔÏó
-    Set MSxlBook = MSxlApp.Workbooks.Open(TmpBomFilePath) '´ò¿ªÒÑ¾­´æÔÚµÄBOMÄ£°å
-    MSxlApp.Visible = False  'ÉèÖÃEXCEL¶ÔÏó¿É¼û£¨»ò²»¿É¼û£©
-    
-    Set MSxlSheet = MSxlBook.Worksheets(1) 'ÉèÖÃ»î¶¯¹¤×÷±í
-    
-    Dim tsvcode         As String
-    Dim tsvDefFmt       As UnicodeEncodeFormat
-    
-    Dim FileContents    As String
-    Dim fileinfo()      As String
-    Dim bomstr()        As String
-    Dim tPartNum        As String
-    
-    Dim i               As Integer
-    Dim j               As Integer
-    Dim m               As Integer
-    Dim n               As Integer
-    Dim rngNum          As Range
-    Dim rngZD           As Range
-    
-    'ÊÊÓ¦²»Í¬µÄtsvÎÄ¼þ±àÂë
-    tsvcode = GetSetting(App.EXEName, "tsvEncoder", "tsvÎÄ¼þ±àÂë", "UTF-8")
-    
-    Select Case tsvcode
-        Case "UTF-8"
-            tsvDefFmt = UEF_UTF8
-        Case "ANSI"
-            tsvDefFmt = UEF_ANSI
-        Case "UTF-16LE"
-            tsvDefFmt = UEF_UTF16LE
-        Case "UTF-16BE"
-            tsvDefFmt = UEF_UTF16BE
-        Case Else
-            tsvDefFmt = UEF_Auto
-    End Select
-    
-    '×ª»»±àÂë¸ñÊ½
-    If UEFSaveTextFile(tsvFilePath & "_ansi.tsv", UEFLoadTextFile(tsvFilePath, tsvDefFmt), False, UEF_ANSI) = False Then
-        MsgBox "tsvÎÄ¼þ¶ÁÈ¡×ª»»´íÎó£¡", vbCritical + vbMsgBoxSetForeground + vbOKOnly, "´íÎó"
-        GoTo ErrorHandle
-    End If
-        
-    FileContents = UEFLoadTextFile(tsvFilePath & "_ansi.tsv", UEF_Auto)
-    Kill tsvFilePath & "_ansi.tsv"       'É¾³ýÖÐ¼äÎÄ¼þ
-    fileinfo = Split(FileContents, vbCrLf) 'È¡³öÔ´ÎÄ¼þÐÐÊý£¬°´ÕÕ»Ø³µ»»ÐÐÀ´·Ö¸ô³ÉÊý×é
-    
-    '»ñÈ¡¿â´æÀàÐÍ
-    Dim SelStorage As String
-    Dim StorageNum As Integer
-    If InStr(TmpBomFilePath, "ÁìÁÏBOM") > 1 Then
-        SelStorage = GetSetting(App.EXEName, "SelectStorage", "¿â´æÀàÐÍ", "TP1")
-        
-        Select Case SelStorage
-        Case "TP1"
-            StorageNum = 1
-        Case "TP2"
-            StorageNum = 2
-        Case "TP3"
-            StorageNum = 3
-        Case Else
-            
-            StorageNum = 1
-        End Select
-        
-    End If
-    
-    'ÐòºÅ    ÎïÁÏ    ×´Ì¬    ÃèÊö    µ¥Î»    Ìæ´ú¹ØÏµ    ×Ü¿É ÓÃÁ¿   ½üÆÚ ¿ÉÓÃ
-    '0       1       2       3       4       5           6           7
-    j = 0
-    
-    For j = 1 To UBound(fileinfo) - 1
-        bomstr = Split(fileinfo(j), vbTab)
-        
-        Process j * 3 / UBound(fileinfo) + ProcNum + 1, "·ÖÎöÎïÁÏ---[" & bomstr(1) & "]..."
-        
-        '¶¨Î»¸÷ÖÖÔª¼þÎ»ÖÃ
-        With MSxlSheet.Cells
-            Set rngNum = .Find(bomstr(1), lookin:=xlValues)
-            If rngNum Is Nothing Then
-                'MsgBox ("ÕÒ²»µ½" & bomstr(1) & "ÁÏºÅµÄ¶ÔÓ¦£¬¿ÉÄÜÊÇÖ¸´ú")
-                For m = 1 To Len(bomstr(5))
-                    For n = 1 To Len(bomstr(5))
-                        tPartNum = Mid(bomstr(5), m, n)
-                        If IsNumeric(tPartNum) = True And Len(tPartNum) = Len(bomstr(1)) Then
-                            With MSxlSheet.Cells
-                                Set rngZD = .Find(tPartNum, lookin:=xlValues)
-                                    If rngZD Is Nothing Then
-                                        MsgBox "ÕÒ²»µ½" & bomstr(1) & "ÁÏºÅµÄ¶ÔÓ¦,Çë¸üÐÂtsvÎÄ¼þ", vbExclamation + vbMsgBoxSetForeground + vbOKOnly, "¾¯¸æ"
-                                        GoTo ErrorHandle
-                                    Else
-                                        'MSxlSheet.Cells(rngZD.Row, 4) = MSxlSheet.Cells(rngZD.Row, 4) & "µ¥´ú" & bomstr(1) & vbCrLf
-                                    End If
-                            End With
-                        End If
-                    Next
-                Next
-            Else
-                'Ìí¼ÓÎïÁÏÃèÊö¶Î
-                MSxlSheet.Cells(rngNum.Row, 3) = bomstr(3)
-                
-                'ÁìÁÏBOMÖÐÐèÒªÌí¼Ó½üÆÚ¿ÉÓÃÁ¿µÄËµÃ÷ bomstr(7) Îª½üÆÚ¿ÉÓÃÁ¿
-                If InStr(TmpBomFilePath, "ÁìÁÏBOM") > 1 Then
-                    
-                    If StorageNum >= 1 And StorageNum <= 3 Then
-                        If bomstr(7) = "0" Then
-                            MSxlSheet.Cells(rngNum.Row, StorageNum + 8).Font.Size = 8
-                            MSxlSheet.Cells(rngNum.Row, StorageNum + 8).Interior.Color = 52479
-                            MSxlSheet.Cells(rngNum.Row, StorageNum + 8) = "½üÆÚ¿ÉÓÃÁ¿Îª" & bomstr(7)
-                        ElseIf InStr(bomstr(7), "-") = 1 Then
-                            MSxlSheet.Cells(rngNum.Row, StorageNum + 8).Interior.Color = 52479
-                            MSxlSheet.Cells(rngNum.Row, StorageNum + 8) = bomstr(7) '½üÆÚ¿ÉÓÃÁ¿Îª¸ºÖµ
-                        Else
-                            MSxlSheet.Cells(rngNum.Row, StorageNum + 8) = bomstr(7) '½üÆÚ¿ÉÓÃÁ¿
-                        End If
-                    Else
-                        MsgBox "ÇëÑ¡Ôñ¿â´æ£¡"
-                        GoTo ErrorHandle
-                    End If
-                End If
-            End If
-        End With
-    Next j
-        
-    MSxlBook.Close (True) '¹Ø±Õ¹¤×÷²¾
-    MSxlApp.Quit '½áÊøEXCEL¶ÔÏó
-    Set MSxlApp = Nothing 'ÊÍ·ÅxlApp¶ÔÏó
-    
-    ImportTSV = True
-    Exit Function
-
-ErrorHandle:
-    MSxlBook.Close (True) '¹Ø±Õ¹¤×÷²¾
-    MSxlApp.Quit '½áÊøEXCEL¶ÔÏó
-    Set MSxlApp = Nothing 'ÊÍ·ÅxlApp¶ÔÏó
-    
-    ImportTSV = False
-    
-End Function
 
 

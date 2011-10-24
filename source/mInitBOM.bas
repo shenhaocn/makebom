@@ -14,29 +14,120 @@ Public ProjectDir      As String  '保存上次打开的目录
 Public ItemName        As String  '保存上次打开的目录
 
 Public BomFilePath     As String  '原始文件完整名
+Public BmfFilePath     As String  '原始文件完整名
 Public SaveAsPath      As String  'BOM保存的文件路径
 Public tsvFilePath     As String  'tsv文件路径信息
 
+'Item Number Part Number Value   Quantity    Part Reference  PCB Footprint Mount Type Description TP1 TP2 TP3
+'0-----------1-----------2-------3-----------4---------------5-------------6----------7-----------8---9--10--
+
+'BMF文件信息编码格式
+Public Enum BmfInfoFormat
+
+BMF_ItemNum = 0
+BMF_PartNum
+BMF_Value
+BMF_Quantity
+BMF_PartRef
+BMF_PcbFB
+BMF_MountType
+BMF_Description
+BMF_TP1
+BMF_TP2
+BMF_TP3
+
+BMF_TOTAL = 10
+
+End Enum
+
 Function BuildProjectPath(srcPath As String)
     '集中生成所有需要的目录信息，在整个工程中，仅此可写入这些路径
-    Dim tmpPath As String
     BomFilePath = srcPath
-    tmpPath = Right(BomFilePath, Len(BomFilePath) - InStrRev(BomFilePath, "\"))
     ProjectDir = Left(BomFilePath, InStrRev(BomFilePath, "\") - 1) & "\"
-    tmpPath = ProjectDir & "BOM\" & tmpPath
-    SaveAsPath = Left(tmpPath, InStrRev(tmpPath, ".") - 1)
+    SaveAsPath = ProjectDir & "BOM\" & MainForm.ItemNameText.Text
+    BmfFilePath = SaveAsPath & ".bmf"
+    
     '在工程目录下创建BOM目录
-    If Dir(ProjectDir & "BOM\") = "" Then
+    If Dir(ProjectDir & "BOM\", vbDirectory) = "" Then
         MkDir ProjectDir & "BOM\"
     End If
+    
     SaveSetting App.EXEName, "ProjectDir", "上次工作目录", ProjectDir
 End Function
 
 Function ClearPath()
     '集中生成所有需要的目录信息，在整个工程中，仅此可写入这些路径
     BomFilePath = ""
+    BmfFilePath = ""
     SaveAsPath = ""
     tsvFilePath = ""
+End Function
+
+Function BomMakePLExcel()
+    
+    Dim Bom                As String
+    Dim BomLine()          As String
+    
+    Dim Atom()             As String
+    
+    Dim PartNum       As Integer
+    
+    Dim i As Integer
+    Dim j As Integer
+    
+    On Error GoTo ErrorHandle
+    
+    Dim xlApp As Excel.Application
+    Dim xlBook As Excel.Workbook
+    Dim xlSheet As Excel.Worksheet
+    
+    Set xlApp = CreateObject("Excel.Application")
+    xlApp.Visible = False
+    
+    '创建批量查询Excel文件
+    Set xlBook = xlApp.Workbooks.Open(App.Path & "\template\批量查询_template.xls")
+    Set xlSheet = xlBook.Worksheets(1)
+    xlBook.SaveAs (SaveAsPath & "_批量资源查询.xls")
+    xlBook.Close (True)
+    
+    '打开批量资源查询xls
+    Set xlBook = xlApp.Workbooks.Open(SaveAsPath & "_批量资源查询.xls")
+    Set xlSheet = xlBook.Worksheets(1)
+    
+    Bom = GetFileContents(BomFilePath)
+    
+    BomLine = Split(Bom, vbCrLf)
+    
+    Atom = Split(BomLine(0), vbTab)
+    
+    
+    '将Bom的信息导入
+    For i = 1 To UBound(BomLine) - 1
+        Atom = Split(BomLine(i), vbTab)
+        
+        '分析料号 要将其添加在批量查询的Excel中
+        If IsNumeric(Atom(BomPartNumber)) = True And Atom(BomPartNumber) <> "" Then
+            xlSheet.Cells(PartNum + 1, 1) = Atom(BomPartNumber)
+            PartNum = PartNum + 1
+        End If
+    Next i
+    
+    xlBook.Close (True) '关闭工作簿
+    
+    xlApp.Quit '结束EXCEL对象
+    Set xlApp = Nothing '释放xlApp对象
+    
+    Process 20, "批量查询文件生成完毕..."
+    
+    Exit Function
+    
+ErrorHandle:
+
+    xlApp.Quit '结束EXCEL对象
+    Set xlApp = Nothing '释放xlApp对象
+    
+    MsgBox "生成BOM中间文件时发生异常", vbCritical + vbMsgBoxSetForeground + vbOKOnly, "错误"
+    
 End Function
 
 Function ReadBomFile() As Boolean
@@ -44,14 +135,9 @@ Function ReadBomFile() As Boolean
     Dim fileinfo()      As String
     Dim newbomstr()     As String
     
-    Dim filenum         As Integer
     Dim i               As Integer
     
-    filenum = FreeFile
-    Open BomFilePath For Binary As #filenum
-        FileContents = Space(LOF(filenum))
-        Get #filenum, , FileContents
-    Close filenum
+    FileContents = GetFileContents(BomFilePath)
     fileinfo = Split(FileContents, vbCrLf) '取出源文件行数，按照回车换行来分隔成数组
     
     'j表示源文件BOM中的行
@@ -88,11 +174,6 @@ Function ReadBomFile() As Boolean
         If newbomstr(i) = "PCB Footprint" Then
             BomPCBfootprint = i
         End If
-        'If BomItemNumber > 5 Or BomPartNumber > 5 Or BomValue > 5 Or BomQuantity > 5 Or BomPartRef > 5 Or BomPCBfootprint > 5 Then
-        '    MsgBox "BOM文件格式错误", vbCritical + vbMsgBoxSetForeground + vbOKOnly, "错误"
-        '    ReadBomFile = False
-        '    Exit Function
-        'End If
     Next
     
     If BomItemNumber = -1 Or BomPartNumber = -1 Or BomValue = -1 Or BomQuantity = -1 Or BomPartRef = -1 Or BomPCBfootprint = -1 Then
@@ -122,195 +203,200 @@ Function ReadBomFile() As Boolean
     ReadBomFile = True
 End Function
 
+'遍历旧Bom 检查BMF文件格式是否正确
+Function CheckBmf() As Boolean
+        
+    Dim bmfBom          As String
+    Dim bmfBomLine()    As String
+    
+    Dim bmfAtom()       As String
+    
+    Dim i               As Integer
+    
+    '初始化返回值
+    CheckBmf = False
+    
+    If Dir(BmfFilePath) = "" Then
+        Exit Function
+    End If
+    
+    bmfBom = GetFileContents(BmfFilePath)
+    
+    bmfBomLine = Split(bmfBom, vbCrLf)
 
-Function CalcPartNum()
-
-    On Error GoTo ErrorHandle
-    
-    Dim xlApp As Excel.Application
-    Dim xlBook As Excel.Workbook, PLxlBook As Excel.Workbook, NBxlBook As Excel.Workbook
-    Dim xlSheet As Excel.Worksheet, PLxlSheet As Excel.Worksheet, NBxlSheet As Excel.Worksheet
-    
-    Set xlApp = CreateObject("Excel.Application")
-    xlApp.Visible = False
-    
-    Set xlBook = xlApp.Workbooks.Open(SaveAsPath & "_PCBA_BOM.xls")
-    Set xlSheet = xlBook.Worksheets(1)
-    
-    Set NBxlBook = xlApp.Workbooks.Open(SaveAsPath & "_NC_DBG.xls")
-    Set NBxlSheet = NBxlBook.Worksheets(1)
-
-    Dim rngSMT          As Range
-    Dim rngLEAD         As Range
-    Dim rngOther        As Range
-    
-    Dim rngNC           As Range
-    Dim rngDB           As Range
-    Dim rngDBNC         As Range
-    
-    Dim rngEND          As Range
-    
-    '定位各种元件位置
-    With xlSheet.Cells
-        Set rngSMT = .Find("SMT元件", lookin:=xlValues)
-        Set rngLEAD = .Find("DIP元件", lookin:=xlValues)
-        Set rngOther = .Find("其他元件", lookin:=xlValues)
-        Set rngEND = .Find("END", lookin:=xlValues)
-        If rngSMT Is Nothing Or rngLEAD Is Nothing Or rngOther Is Nothing Or rngEND Is Nothing Then
-            MsgBox "PCBA_BOM模板错误", vbCritical + vbMsgBoxSetForeground + vbOKOnly, "错误"
-            GoTo ErrorHandle
+    '遍历旧Bom 检查BMF文件格式是否正确
+    For i = 0 To UBound(bmfBomLine) - 1
+        bmfAtom = Split(bmfBomLine(i), vbTab)
+        If UBound(bmfAtom) = BMF_TOTAL Then
+            CheckBmf = True
         End If
-    End With
-    
-    Dim LeadPartNum     As Integer
-    Dim SmtPartNum      As Integer
-    Dim OtherPartNum    As Integer
-    '计算元件个数
-    SmtPartNum = rngLEAD.Row - rngSMT.Row - 1
-    LeadPartNum = rngOther.Row - rngLEAD.Row - 1
-    OtherPartNum = rngEND.Row - rngOther.Row - 1
-    
-    If SmtPartNum = 1 And xlSheet.Cells(rngSMT.Row + 1, 5) = "" Then
-        SmtPartNum = 0
-    End If
-    If LeadPartNum = 1 And xlSheet.Cells(rngLEAD.Row + 1, 5) = "" Then
-        LeadPartNum = 0
-    End If
-    If OtherPartNum = 1 And xlSheet.Cells(rngOther.Row + 1, 5) = "" Then
-        OtherPartNum = 0
-    End If
-
-    '定位各种元件位置
-    With NBxlSheet.Cells
-        Set rngNC = .Find("NC元件", lookin:=xlValues)
-        Set rngDB = .Find("DBG元件", lookin:=xlValues)
-        Set rngDBNC = .Find("DBG_NC元件", lookin:=xlValues)
-        Set rngEND = .Find("END", lookin:=xlValues)
-        If rngNC Is Nothing Or rngDB Is Nothing Or rngEND Is Nothing Then
-            MsgBox "NC_DBG模板错误", vbCritical + vbMsgBoxSetForeground + vbOKOnly, "错误"
-            GoTo ErrorHandle
-        End If
-    End With
-    
-    Dim NcPartNum       As Integer
-    Dim DbgPartNum      As Integer
-    Dim DbNcPartNum     As Integer
-    
-    NcPartNum = rngDB.Row - rngNC.Row - 1
-    DbgPartNum = rngDBNC.Row - rngDB.Row - 1
-    DbNcPartNum = rngEND.Row - rngDBNC.Row - 1
-    
-
-    If NcPartNum = 1 And NBxlSheet.Cells(rngNC.Row + 1, 5) = "" Then
-        NcPartNum = 0
-    End If
-    If DbgPartNum = 1 And NBxlSheet.Cells(rngDB.Row + 1, 5) = "" Then
-        DbgPartNum = 0
-    End If
-    If DbNcPartNum = 1 And NBxlSheet.Cells(rngDBNC.Row + 1, 5) = "" Then
-        DbNcPartNum = 0
-    End If
-
-    
-    '保存元件个数，供后续调用
-    PartNum(0) = NcPartNum
-    PartNum(1) = DbgPartNum
-    PartNum(2) = DbNcPartNum
-    
-    PartNum(3) = LeadPartNum
-    PartNum(4) = SmtPartNum
-    PartNum(5) = OtherPartNum
-    
-    Dim msgstr As String
-    msgstr = "元件信息获取成功！" & vbCrLf & vbCrLf
-    msgstr = msgstr + "          贴装   元件个数为   ： " & SmtPartNum & vbCrLf
-    msgstr = msgstr + "          插装   元件个数为   ： " & LeadPartNum & vbCrLf
-    msgstr = msgstr + "          其他   元件个数为   ： " & OtherPartNum & vbCrLf & vbCrLf
-    
-    msgstr = msgstr + "          NC     元件个数为   ： " & NcPartNum & vbCrLf
-    msgstr = msgstr + "          DBG    元件个数为   ： " & DbgPartNum & vbCrLf
-    msgstr = msgstr + "          DBG_NC 元件个数为   ： " & DbNcPartNum & vbCrLf & vbCrLf
-    msgstr = msgstr + "          请选择.tsv文件路径后继续操作" & vbCrLf & vbCrLf
-    msgstr = msgstr + "    注意：生成的PCBA_BOM文件需要检查修改后才可供评审 "
-    
-    MsgBox msgstr, vbInformation + vbOKOnly + vbMsgBoxSetForeground, "元件信息"
-    
-    xlBook.Close (True) '关闭工作簿
-    NBxlBook.Close (True)
-    
-ErrorHandle:
-    xlApp.Quit '结束EXCEL对象
-    Set xlApp = Nothing '释放xlApp对象
+    Next i
     
 End Function
 
-Function BomDraft()
-    On Error GoTo ErrorHandle
-    
-    Process 4, "创建Excel格式 BOM文档..."
-    
-    Dim xlApp As Excel.Application
-    Dim xlBook As Excel.Workbook, PLxlBook As Excel.Workbook, NBxlBook As Excel.Workbook, NonexlBook As Excel.Workbook
-    Dim xlSheet As Excel.Worksheet, PLxlSheet As Excel.Worksheet, NBxlSheet As Excel.Worksheet, NonexlSheet As Excel.Worksheet
-    
-    Set xlApp = CreateObject("Excel.Application")
-    xlApp.Visible = False
-    
-    Process 5, "打开PCBA_BOM初稿..."
+'根据给定的字符串查找给定的列，返回给定列号的字符串
+Function LookupBmfAtom(checkStr As String, checkCol As Integer, returnCol As Integer) As String
         
-    'PCBA_BOM
-    Set xlBook = xlApp.Workbooks.Open(SaveAsPath & "_PCBA_BOM.xls")
-    Set xlSheet = xlBook.Worksheets(1)
+    Dim bmfBom          As String
+    Dim bmfBomLine()    As String
     
-    Process 6, "打开批量查询文件..."
-    '打开批量资源查询xls
-    Set PLxlBook = xlApp.Workbooks.Open(SaveAsPath & "_批量资源查询.xls")
-    Set PLxlSheet = PLxlBook.Worksheets(1)
+    Dim bmfAtom()       As String
     
-    Process 7, "打开NC_DBG元件文档..."
-    '打开NC_DBG元件xls
-    Set NBxlBook = xlApp.Workbooks.Open(SaveAsPath & "_NC_DBG.xls")
-    Set NBxlSheet = NBxlBook.Worksheets(1)
+    Dim i               As Integer
     
-    '打开None元件表单
-    Set NonexlBook = xlApp.Workbooks.Open(SaveAsPath & "_None_PartRef.xls")
-    Set NonexlSheet = NonexlBook.Worksheets(1)
+    '初始化返回值
+    LookupBmfAtom = "-"
     
-    Dim rngSMT          As Range
-    Dim rngLEAD         As Range
-    Dim rngOther        As Range
+    If Dir(BmfFilePath) = "" Then
+        Exit Function
+    End If
     
-    Dim rngNC           As Range
-    Dim rngDB           As Range
-    Dim rngDBNC         As Range
+    bmfBom = GetFileContents(BmfFilePath)
     
-    Process 8, "定位PCBA_BOM中各元件初始位置信息..."
-    '定位各种元件位置
-    With xlSheet.Cells
-        Set rngSMT = .Find("SMT元件", lookin:=xlValues)
-        Set rngLEAD = .Find("DIP元件", lookin:=xlValues)
-        Set rngOther = .Find("其他元件", lookin:=xlValues)
-        If rngSMT Is Nothing Or rngLEAD Is Nothing Or rngOther Is Nothing Then
-            MsgBox "PCBA_BOM模板错误", vbCritical + vbMsgBoxSetForeground + vbOKOnly, "错误"
-            GoTo ErrorHandle
+    bmfBomLine = Split(bmfBom, vbCrLf)
+
+    '遍历旧Bom 查找对应的字符串
+    For i = 1 To UBound(bmfBomLine) - 1
+        bmfAtom = Split(bmfBomLine(i), vbTab)
+        If checkStr = bmfAtom(checkCol) Then
+            LookupBmfAtom = bmfAtom(returnCol)
         End If
-    End With
+    Next i
     
-    Process 9, "定位NC_DBG中各元件初始位置信息..."
-    '定位各种元件位置
-    With NBxlSheet.Cells
-        Set rngNC = .Find("NC元件", lookin:=xlValues)
-        Set rngDB = .Find("DBG元件", lookin:=xlValues)
-        Set rngDBNC = .Find("DBG_NC元件", lookin:=xlValues)
-        If rngNC Is Nothing Or rngDB Is Nothing Then
-            MsgBox "NC_DBG模板错误", vbCritical + vbMsgBoxSetForeground + vbOKOnly, "错误"
-            GoTo ErrorHandle
+End Function
+
+'根据给定的字符串查找给定的列，返回查找到的第一个行号
+Function LookupBmfRow(checkStr As String, checkCol As Integer) As Integer
+        
+    Dim bmfBom          As String
+    Dim bmfBomLine()    As String
+    
+    Dim bmfAtom()       As String
+    
+    Dim i               As Integer
+    
+    '初始化返回值
+    LookupBmfRow = -1
+    
+    If Dir(BmfFilePath) = "" Then
+        Exit Function
+    End If
+    
+    bmfBom = GetFileContents(BmfFilePath)
+    
+    bmfBomLine = Split(bmfBom, vbCrLf)
+
+    '遍历旧Bom 查找对应的字符串
+    For i = 1 To UBound(bmfBomLine) - 1
+        bmfAtom = Split(bmfBomLine(i), vbTab)
+        If checkStr = bmfAtom(checkCol) Then
+            LookupBmfRow = i
+            Exit For
         End If
-    End With
+    Next i
     
-    '========================================================
+End Function
+
+'根据给定行号，给定列号，返回字符串
+Function GetBmfAtom(Row As Integer, Col As Integer) As String
+        
+    Dim bmfBom          As String
+    Dim bmfBomLine()    As String
+    
+    Dim bmfAtom()       As String
+
+    
+    '初始化返回值
+    GetBmfAtom = ""
+    
+    If Dir(BmfFilePath) = "" Then
+        Exit Function
+    End If
+    
+    bmfBom = GetFileContents(BmfFilePath)
+    
+    bmfBomLine = Split(bmfBom, vbCrLf)
+    
+    bmfAtom = Split(bmfBomLine(Row), vbTab)
+    GetBmfAtom = bmfAtom(Col)
+    
+End Function
+
+'根据给定行号，返回一行数据
+Function GetBmfLine(Row As Integer) As String
+        
+    Dim bmfBom          As String
+    Dim bmfBomLine()    As String
+    
+    Dim bmfAtom()       As String
+    
+    '初始化返回值
+    GetBmfLine = ""
+    
+    If Dir(BmfFilePath) = "" Then
+        Exit Function
+    End If
+    
+    bmfBom = GetFileContents(BmfFilePath)
+    
+    bmfBomLine = Split(bmfBom, vbCrLf)
+
+    GetBmfLine = bmfBomLine(Row)
+    
+End Function
+
+'修改给定行号，给定列号的对应的数据
+Function SetBmfAtom(Row As Integer, Col As Integer, addStr As String)
+             
+    Dim oldBom          As String
+    Dim newBomLine()    As String
+    
+    Dim BomAtom()       As String
+    
+    Dim i               As Integer
+    
+    oldBom = GetFileContents(BmfFilePath)
+    
+    newBomLine = Split(oldBom, vbCrLf)
+    
+    '添加列头信息
+    'Item Number Part Number Value   Quantity    Part Reference  PCB Footprint Mount Type Description TP1 TP2 TP3
+    '0-----------1-----------2-------3-----------4---------------5-------------6----------7-----------8---9--10--
+    BomAtom = Split(newBomLine(Row), vbTab)
+    BomAtom(Col) = addStr
+    
+    newBomLine(Row) = ""
+    
+    '将旧Bom的信息导入到新Bom 遍历旧Bom
+    For i = 0 To UBound(BomAtom) - 1
+        newBomLine(Row) = newBomLine(Row) + BomAtom(i) + vbTab
+    Next i
+    
+    '最后一列没有vbTab
+    newBomLine(Row) = newBomLine(Row) + BomAtom(UBound(BomAtom))
+    
+    If Dir(BmfFilePath) <> "" Then
+        Kill BmfFilePath
+    End If
+    
+    Open BmfFilePath For Binary Access Write As #1
+    Seek #1, 1
+    Put #1, , newBomLine(0) & vbCrLf
+    
+    For i = 1 To UBound(newBomLine) - 1
+        Put #1, , newBomLine(i) & vbCrLf
+    Next i
+        
+    Put #1, , vbCrLf
+
+    Close #1
+    
+End Function
+
+Function BmfMaker()
+    
+
     '读取库信息
-    'LEAD 库
     Process 10, "读取库文件信息..."
     
     Dim leadLibInfo()      As String
@@ -321,9 +407,14 @@ Function BomDraft()
     smtLibInfo = ReadLibs(LIB_SMD)
     IgLibInfo = ReadLibs(LIB_NONE)
         
-    Dim FileContents    As String
-    Dim fileinfo()      As String
-    Dim bomstr()        As String
+    '创建BOM中间文件
+    Dim oldBom          As String
+    Dim oldBomLine()    As String
+    Dim newBomLine()    As String
+    
+    Dim oldAtom()       As String
+    Dim newAtom()       As String
+    
     Dim strtmp          As String
     
     Dim NcPartNum       As Integer
@@ -333,7 +424,6 @@ Function BomDraft()
     
     Dim LeadPartNum     As Integer
     Dim SmtPartNum      As Integer
-    Dim OtherPartNum    As Integer
     
     Dim PLPartNum       As Integer
     
@@ -341,136 +431,174 @@ Function BomDraft()
     Dim IsSmt           As Integer
     Dim IsNone          As Integer
     
-    FileContents = GetFileContents(BomFilePath)
-    fileinfo = Split(FileContents, vbCrLf) '取出源文件行数，按照回车换行来分隔成数组
-    
+    Dim i               As Integer
     Dim j               As Integer
-    Dim k               As Integer
     
-    On Error GoTo ErrorHandle
-    For j = 1 To UBound(fileinfo) - 1
+    Dim BmfExistFlag    As Boolean
+    
+    'BMF文件是否存在 是否可以利用
+    BmfExistFlag = CheckBmf
+    
+    oldBom = GetFileContents(BomFilePath)
+    
+    oldBomLine = Split(oldBom, vbCrLf)
+    newBomLine = Split(oldBom, vbCrLf)
+    
+    For i = 0 To UBound(oldBomLine)
+        newBomLine(i) = ""
+    Next i
+    
+    '添加列头信息
+    'Item Number Part Number Value   Quantity    Part Reference  PCB Footprint Mount Type Description TP1 TP2 TP3
+    '0-----------1-----------2-------3-----------4---------------5-------------6----------7-----------8---9--10--
+    oldAtom = Split(oldBomLine(0), vbTab)
+    newBomLine(0) = oldAtom(BomItemNumber) + vbTab + oldAtom(BomPartNumber) + vbTab
+    newBomLine(0) = newBomLine(0) + oldAtom(BomValue) + vbTab + oldAtom(BomQuantity) + vbTab
+    newBomLine(0) = newBomLine(0) + oldAtom(BomPartRef) + vbTab + oldAtom(BomPCBfootprint) + vbTab
+    '贴装方式信息及物料描述信息段
+    newBomLine(0) = newBomLine(0) + "Mount Type" + vbTab + "Description" + vbTab
+    '库存信息
+    newBomLine(0) = newBomLine(0) + "TP1" + vbTab + "TP2" + vbTab + "TP3"
+    
+    
+    '将旧Bom的信息导入到新Bom 遍历旧Bom
+    'On Error GoTo ErrorHandle
+    For i = 1 To UBound(oldBomLine) - 1
+        oldAtom = Split(oldBomLine(i), vbTab)
         
-        bomstr = Split(fileinfo(j), vbTab)
-            
          '料号后面存在两个以上换行
-        If UBound(bomstr) < 5 Then
-            strtmp = fileinfo(j)
-            For k = j + 1 To UBound(fileinfo)
-                If Len(fileinfo(k)) > 1 Then
-                    bomstr = Split(strtmp & fileinfo(k), vbTab)
-                    j = k
+        If UBound(oldAtom) < 5 Then
+            strtmp = oldBomLine(i)
+            For j = i + 1 To UBound(oldBomLine)
+                If Len(oldBomLine(j)) > 1 Then
+                    oldAtom = Split(strtmp & oldBomLine(j), vbTab)
+                    i = j
                     Exit For
                 End If
             Next
         End If
         
-        Process j * 40 / UBound(fileinfo) + 10, "分析封装[" & bomstr(BomPCBfootprint) & "]..."
+        newBomLine(i) = oldAtom(BomItemNumber) + vbTab + oldAtom(BomPartNumber) + vbTab
+        newBomLine(i) = newBomLine(i) + oldAtom(BomValue) + vbTab + oldAtom(BomQuantity) + vbTab
+        newBomLine(i) = newBomLine(i) + oldAtom(BomPartRef) + vbTab + oldAtom(BomPCBfootprint) + vbTab
         
-        '分析料号 要将其添加在批量查询的Excel中
+        Process i * 40 / UBound(oldBomLine) + 10, "分析封装[" & oldAtom(BomPCBfootprint) & "]..."
         
-        If IsNumeric(bomstr(BomPartNumber)) = True And bomstr(BomPartNumber) <> "" Then
-            PLxlSheet.Cells(PLPartNum + 1, 1) = bomstr(BomPartNumber)
+        '分析料号
+        If IsNumeric(oldAtom(BomPartNumber)) = True And oldAtom(BomPartNumber) <> "" Then
             PLPartNum = PLPartNum + 1
         End If
         
-        If InStr(bomstr(BomValue), "_DBG_NC") > 0 Or bomstr(BomValue) = "DBG_NC" Then
+        '统计元件类型个数
+        If InStr(oldAtom(BomValue), "_DBG_NC") > 0 Or oldAtom(BomValue) = "DBG_NC" Then
             'DBG_NC元件
             DbNcPartNum = DbNcPartNum + 1
-            xlsInsert NBxlSheet, DbNcPartNum, rngDBNC.Row, bomstr
             
-        ElseIf InStr(bomstr(BomValue), "_DBG") > 0 Or bomstr(BomValue) = "DBG" Then
+        ElseIf InStr(oldAtom(BomValue), "_DBG") > 0 Or oldAtom(BomValue) = "DBG" Then
             'DBG元件
             DbgPartNum = DbgPartNum + 1
-            xlsInsert NBxlSheet, DbgPartNum, rngDB.Row, bomstr
            
-        ElseIf InStr(bomstr(BomValue), "_NC") > 0 Or bomstr(BomValue) = "NC" Then
+        ElseIf InStr(oldAtom(BomValue), "_NC") > 0 Or oldAtom(BomValue) = "NC" Then
             'NC元件
             NcPartNum = NcPartNum + 1
-            xlsInsert NBxlSheet, NcPartNum, rngNC.Row, bomstr
+            
+        End If
+        
+        
+        If oldAtom(BomPCBfootprint) = "" Then
+            MsgBox oldAtom(BomPartNumber) & "的PCB footprint为空", vbExclamation + vbMsgBoxSetForeground + vbOKOnly, "警告"
+            Exit Function
+        End If
+        
+        '========================================================
+        '区分元件贴装类型  填充Mount Type段
+        
+        '判断元件类型
+        IsLead = QueryLib(leadLibInfo, oldAtom(BomPCBfootprint))
+        IsSmt = QueryLib(smtLibInfo, oldAtom(BomPCBfootprint))
+        IsNone = QueryLib(IgLibInfo, oldAtom(BomPCBfootprint))
+            
+        If IsLead = 1 And IsSmt = 0 And IsNone = 0 Then
+            '统计并写入LEAD元件
+            LeadPartNum = LeadPartNum + 1
+            newBomLine(i) = newBomLine(i) + "L" + vbTab
+            
+        ElseIf IsLead = 0 And IsSmt = 1 And IsNone = 0 Then
+            '统计并写入SMT元件
+            SmtPartNum = SmtPartNum + 1
+            newBomLine(i) = newBomLine(i) + "S" + vbTab
+        
+        ElseIf IsLead = 0 And IsSmt = 0 And IsNone = 1 Then
+            '统计并写入单独的文件中 None元件
+            NonePartNum = NonePartNum + 1
+            newBomLine(i) = newBomLine(i) + "N" + vbTab
+            
+        ElseIf IsLead = 1 And IsSmt = 1 And IsNone = 0 Then
+            '特殊SMT元件 两道工序 特殊颜色标示
+            SmtPartNum = SmtPartNum + 1
+            newBomLine(i) = newBomLine(i) + "S+" + vbTab
             
         Else
-        
-            If bomstr(BomPCBfootprint) = "" Then
-                MsgBox bomstr(BomPartNumber) & "的PCB footprint为空", vbExclamation + vbMsgBoxSetForeground + vbOKOnly, "警告"
-                GoTo ErrorHandle
-            End If
+           '库文件中没有查到封装，拒绝生成BOM
+            MsgBox "封装[" & oldAtom(BomPCBfootprint) & "]不存在于库文件中，请更新库文件！"
+            Exit Function
             
-            '========================================================
-            '普通元件 区分元件贴装类型
-            '判断元件类型
-            IsLead = QueryLib(leadLibInfo, bomstr(BomPCBfootprint))
-            IsSmt = QueryLib(smtLibInfo, bomstr(BomPCBfootprint))
-            IsNone = QueryLib(IgLibInfo, bomstr(BomPCBfootprint))
-                
-            If IsLead = 1 And IsSmt = 0 And IsNone = 0 Then
-                '统计并写入LEAD元件
-                LeadPartNum = LeadPartNum + 1
-                xlsInsert xlSheet, LeadPartNum, rngLEAD.Row, bomstr
-                
-            ElseIf IsLead = 0 And IsSmt = 1 And IsNone = 0 Then
-                '统计并写入SMT元件
-                SmtPartNum = SmtPartNum + 1
-                xlsInsert xlSheet, SmtPartNum, rngSMT.Row, bomstr
-            
-            ElseIf IsLead = 0 And IsSmt = 0 And IsNone = 1 Then
-                '统计并写入单独的文件中 None元件
-                NonePartNum = NonePartNum + 1
-                '由于使用的是NC_DBG模版，因此可用rngNC.Row,而不需要重新定位
-                xlsInsert NonexlSheet, NonePartNum, rngNC.Row, bomstr
-                
-            ElseIf IsLead = 1 And IsSmt = 1 And IsNone = 0 Then
-                '特殊SMT元件 两道工序 特殊颜色标示
-                SmtPartNum = SmtPartNum + 1
-                xlsInsert xlSheet, SmtPartNum, rngSMT.Row, bomstr
-                xlSheet.Rows(rngSMT.Row & ":" & rngSMT.Row).Interior.Color = 16737792
-                
-            Else
-               '库文件中没有查到封装，拒绝生成BOM
-                MsgBox "封装[" & bomstr(BomPCBfootprint) & "]不存在于库文件中，请更新库文件！"
-                OtherPartNum = OtherPartNum + 1
-                xlsInsert xlSheet, OtherPartNum, rngOther.Row, bomstr
-                GoTo ErrorHandle
-            End If
-            
-            IsLead = 0
-            IsSmt = 0
-            IsNone = 0
-
         End If
-    Next j
+        
+        IsLead = 0
+        IsSmt = 0
+        IsNone = 0
+        
+        '添加Description TPn等信息 如果存在旧的.bmf文件，可以从其导入，节约效率
+        '贴装方式信息及物料描述信息段
+        If BmfExistFlag Then
+            '存在旧文件导入相关信息 仅对比料号 料号不相等 无法导入
+            If IsNumeric(oldAtom(BomPartNumber)) = True And oldAtom(BomPartNumber) <> "" Then
+                'BomPartNumber是keyed
+                '描述信息
+                newBomLine(i) = newBomLine(i) + LookupBmfAtom(oldAtom(BomPartNumber), BMF_PartNum, BMF_Description) + vbTab
+                '库存信息
+                newBomLine(i) = newBomLine(i) + LookupBmfAtom(oldAtom(BomPartNumber), BMF_PartNum, BMF_TP1) + vbTab
+                newBomLine(i) = newBomLine(i) + LookupBmfAtom(oldAtom(BomPartNumber), BMF_PartNum, BMF_TP2) + vbTab
+                newBomLine(i) = newBomLine(i) + LookupBmfAtom(oldAtom(BomPartNumber), BMF_PartNum, BMF_TP3)
+            
+            ElseIf oldAtom(BomValue) <> "" Then
+                'BomValue也是Keyed
+                '描述信息
+                newBomLine(i) = newBomLine(i) + LookupBmfAtom(oldAtom(BomValue), BMF_Value, BMF_Description) + vbTab
+                '库存信息
+                newBomLine(i) = newBomLine(i) + LookupBmfAtom(oldAtom(BomValue), BMF_Value, BMF_TP1) + vbTab
+                newBomLine(i) = newBomLine(i) + LookupBmfAtom(oldAtom(BomValue), BMF_Value, BMF_TP2) + vbTab
+                newBomLine(i) = newBomLine(i) + LookupBmfAtom(oldAtom(BomValue), BMF_Value, BMF_TP3)
+            Else
+                '仅填充相应的项
+                newBomLine(i) = newBomLine(i) + "-" + vbTab
+                newBomLine(i) = newBomLine(i) + "-" + vbTab + "-" + vbTab + "-"
+            End If
+        Else
+            '仅填充相应的项
+            newBomLine(i) = newBomLine(i) + "-" + vbTab
+            newBomLine(i) = newBomLine(i) + "-" + vbTab + "-" + vbTab + "-"
+        End If
+        
+    Next i
     
-    '修改机型名称
-    xlSheet.Cells(2, 1) = "机型：  " & MainForm.ItemNameText.Text & "            PCBA 版本：                       半成品编号："
-    If MainForm.ItemNameText.Text = "" Then
-        xlSheet.Cells(2, 1).Font.ColorIndex = 5
+    
+    If Dir(BmfFilePath) <> "" Then
+        Kill BmfFilePath
     End If
-     
-    Process 50, "批量查询文件生成完毕..."
     
-    Dim msgstr As String
-    msgstr = ""
-    msgstr = msgstr + "          可批量查询的元件个数： " & PLPartNum & vbCrLf
-    msgstr = msgstr + "          贴装   元件个数为   ： " & SmtPartNum & vbCrLf
-    msgstr = msgstr + "          插装   元件个数为   ： " & LeadPartNum & vbCrLf
-    msgstr = msgstr + "          其他   元件个数为   ： " & OtherPartNum & vbCrLf & vbCrLf
+    Open BmfFilePath For Binary Access Write As #1
+    Seek #1, 1
+    Put #1, , newBomLine(0) & vbCrLf
     
-    msgstr = msgstr + "          None   元件个数为   ： " & NonePartNum & vbCrLf & vbCrLf
-    
-    msgstr = msgstr + "          NC     元件个数为   ： " & NcPartNum & vbCrLf
-    msgstr = msgstr + "          DBG    元件个数为   ： " & DbgPartNum & vbCrLf
-    msgstr = msgstr + "          DBG_NC 元件个数为   ： " & DbNcPartNum & vbCrLf & vbCrLf
-    msgstr = msgstr + " 批量查询文件已经正确生成，请使用ERP系统查询后继续操作" & vbCrLf & vbCrLf
-    msgstr = msgstr + "    注意：生成的PCBA_BOM文件需要检查修改后才可供评审 "
-    
-    MsgBox msgstr, vbInformation + vbOKOnly + vbMsgBoxSetForeground, "元件信息"
-    
-    xlBook.Close (True) '关闭工作簿
-    PLxlBook.Close (True)
-    NBxlBook.Close (True)
-    NonexlBook.Close (True)
-    
-    xlApp.Quit '结束EXCEL对象
-    Set xlApp = Nothing '释放xlApp对象
+    For j = 1 To UBound(newBomLine) - 1
+        Put #1, , newBomLine(j) & vbCrLf
+    Next j
+        
+    'Put #1, , vbCrLf
+
+    Close #1
     
     '保存元件个数，供后续调用
     PartNum(0) = NcPartNum
@@ -478,100 +606,72 @@ Function BomDraft()
     PartNum(2) = DbNcPartNum
     PartNum(3) = LeadPartNum
     PartNum(4) = SmtPartNum
-    PartNum(5) = OtherPartNum
+    PartNum(5) = 0
     
-    Process 50, "请批量查询后继续操作，选择tsv文件..."
-    Exit Function
-    
-ErrorHandle:
-
-    xlApp.Quit '结束EXCEL对象
-    Set xlApp = Nothing '释放xlApp对象
-    
-    MsgBox "生成BOM中间文件时发生异常", vbCritical + vbMsgBoxSetForeground + vbOKOnly, "错误"
+    Process 50, "BOM中间文件生成成功..."
     
 End Function
 
-Function xlsInsert(xlSheet As Excel.Worksheet, PartNum As Integer, Row As Long, insertStr() As String)
-    If PartNum > 1 Then
-        xlSheet.Rows(Row + PartNum & ":" & Row + PartNum).Insert
-    End If
-    xlSheet.Cells(PartNum + Row, 1) = PartNum
-    xlSheet.Cells(PartNum + Row, 2) = insertStr(BomPartNumber)
-    xlSheet.Cells(PartNum + Row, 8) = insertStr(BomValue)
-    xlSheet.Cells(PartNum + Row, 5) = insertStr(BomQuantity)
-    xlSheet.Cells(PartNum + Row, 6) = insertStr(BomPartRef)
-    xlSheet.Cells(PartNum + Row, 7) = insertStr(BomPCBfootprint)
-End Function
+Function ImportTSV() As Boolean
 
-Function ExcelCreate()
-
-    On Error GoTo ErrorHandle
+    Process 51, "分析tsv文件信息..."
     
-    Dim xlApp As Excel.Application
-    Dim xlBook As Excel.Workbook, PLxlBook As Excel.Workbook, NBxlBook As Excel.Workbook, NonexlBook As Excel.Workbook
-    Dim xlSheet As Excel.Worksheet, PLxlSheet As Excel.Worksheet, NBxlSheet As Excel.Worksheet, NonexlSheet As Excel.Worksheet
+    Dim FileContents    As String
+    Dim fileinfo()      As String
+    Dim bomstr()        As String
     
-    Dim rngNC           As Range
-    Dim rngDB           As Range
-    Dim rngDBNC         As Range
+    Dim i               As Integer
+    Dim FindRow         As Integer
     
-    Set xlApp = CreateObject("Excel.Application")
-    xlApp.Visible = False
+    '自动适应不同的tsv文件编码
+    FileContents = UEFLoadTextFile(tsvFilePath, UEF_AUTO)
+    fileinfo = Split(FileContents, vbCrLf) '取出源文件行数，按照回车换行来分隔成数组
     
-    'PCBA_BOM
-    Set xlBook = xlApp.Workbooks.Open(App.Path & "\template\PCBA_BOM_template.xls")
-    Set xlSheet = xlBook.Worksheets(1)
-    xlBook.SaveAs (SaveAsPath & "_PCBA_BOM.xls")
-    xlBook.Close (True) '关闭工作簿
+    '获取库存类型
+    Dim SelStorage As String
     
-    '创建批量资源查询xls
-    Set PLxlBook = xlApp.Workbooks.Open(App.Path & "\template\批量查询_template.xls")
-    Set PLxlSheet = PLxlBook.Worksheets(1)
-    PLxlBook.SaveAs (SaveAsPath & "_批量资源查询.xls")
-    PLxlBook.Close (True)
+    SelStorage = GetSetting(App.EXEName, "SelectStorage", "库存类型", "TP1")
+        
     
-
-    '创建NC_DBG元件xls
-    Set NBxlBook = xlApp.Workbooks.Open(App.Path & "\template\NC_DBG_template.xls")
-    Set NBxlSheet = NBxlBook.Worksheets(1)
-    NBxlBook.SaveAs (SaveAsPath & "_NC_DBG.xls")
+    '序号    物料(编码)    状态    描述    单位    替代关系    总可 用量   近期 可用
+    '0       1             2       3       4       5           6           7
     
-    NBxlBook.Close (True)
-    
-    Set NonexlBook = xlApp.Workbooks.Open(App.Path & "\template\NC_DBG_template.xls")
-    NonexlBook.SaveAs (SaveAsPath & "_None_PartRef.xls")
-    NonexlBook.Worksheets(1).Name = "None元件"
-    
-    Set NonexlSheet = NonexlBook.Worksheets(1)
-    
-    With NonexlSheet.Cells
-        Set rngNC = .Find("NC元件", lookin:=xlValues)
-        Set rngDB = .Find("DBG元件", lookin:=xlValues)
-        Set rngDBNC = .Find("DBG_NC元件", lookin:=xlValues)
-        If rngNC Is Nothing Or rngDB Is Nothing Then
-            MsgBox "NC_DBG模板错误", vbCritical + vbMsgBoxSetForeground + vbOKOnly, "错误"
-            End
+    For i = 1 To UBound(fileinfo) - 1
+        bomstr = Split(fileinfo(i), vbTab)
+        
+        Process i * 3 / UBound(fileinfo) + 51 + 1, "分析物料  [" & bomstr(1) & "]..."
+        
+        '查找并填入相关信息
+        FindRow = LookupBmfRow(bomstr(1), BMF_PartNum)
+        If FindRow > 0 Then
+            '物料描述
+            SetBmfAtom FindRow, BMF_Description, bomstr(3)
+            
+            '库存信息
+            Select Case SelStorage
+            Case "TP1"
+                SetBmfAtom FindRow, BMF_TP1, bomstr(7)
+            Case "TP2"
+                SetBmfAtom FindRow, BMF_TP2, bomstr(7)
+            Case "TP3"
+                SetBmfAtom FindRow, BMF_TP3, bomstr(7)
+            Case Else
+                SetBmfAtom FindRow, BMF_TP1, bomstr(7)
+            End Select
+            
         End If
-    End With
+        
+    Next i
     
-    '调整NoneShleet
-    NonexlSheet.Cells(rngNC.Row, 2) = "None"
-    NonexlSheet.Rows(rngDB.Row & ":" & rngDBNC.Row + 1).Delete
-
-    NonexlBook.Close (True)
-    
-    xlApp.Quit '结束EXCEL对象
-    Set xlApp = Nothing '释放xlApp对象
-    Exit Function
-    
-ErrorHandle:
-    
-    xlApp.Quit '结束EXCEL对象
-    Set xlApp = Nothing '释放xlApp对象
-    
-    MsgBox "创建BOM中间文件时发生异常", vbCritical + vbMsgBoxSetForeground + vbOKOnly, "错误"
-    
-
+    Process 60, "BOM中间文件生成完毕..."
+ 
 End Function
 
+Function BmfToAnsi() As Boolean
+    
+    '转换编码格式
+    If UEFSaveTextFile(BmfFilePath, UEFLoadTextFile(BmfFilePath, UEF_UTF8), False, UEF_ANSI) = False Then
+        MsgBox "bmf文件格式转换错误！", vbCritical + vbMsgBoxSetForeground + vbOKOnly, "错误"
+    End If
+ 
+End Function

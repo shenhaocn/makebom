@@ -1,13 +1,13 @@
 VERSION 5.00
-Object = "{F9043C88-F6F2-101A-A3C9-08002B2F49FB}#1.2#0"; "comdlg32.ocx"
+Object = "{F9043C88-F6F2-101A-A3C9-08002B2F49FB}#1.2#0"; "COMDLG32.OCX"
 Object = "{831FDD16-0C5C-11D2-A9FC-0000F8754DA1}#2.0#0"; "MSCOMCTL.OCX"
 Begin VB.Form MainForm 
    BorderStyle     =   1  'Fixed Single
    Caption         =   "BOMÉú³É¹¤¾ß"
-   ClientHeight    =   2070
+   ClientHeight    =   4140
    ClientLeft      =   150
-   ClientTop       =   720
-   ClientWidth     =   4620
+   ClientTop       =   780
+   ClientWidth     =   4485
    BeginProperty Font 
       Name            =   "ËÎÌå"
       Size            =   9
@@ -21,34 +21,97 @@ Begin VB.Form MainForm
    LinkTopic       =   "Form1"
    MaxButton       =   0   'False
    OLEDropMode     =   1  'Manual
-   ScaleHeight     =   2070
-   ScaleWidth      =   4620
+   ScaleHeight     =   4140
+   ScaleWidth      =   4485
    StartUpPosition =   3  '´°¿ÚÈ±Ê¡
+   Begin VB.Frame Frame1 
+      Caption         =   "Éú³ÉBOM"
+      Height          =   1035
+      Left            =   180
+      TabIndex        =   6
+      Top             =   900
+      Width           =   4155
+      Begin VB.CheckBox CheckNcDbg 
+         Caption         =   "NC DBGÔª¼ş"
+         Height          =   255
+         Left            =   2640
+         TabIndex        =   12
+         Top             =   300
+         Width           =   1395
+      End
+      Begin VB.CheckBox CheckAll 
+         Caption         =   "È«Ñ¡"
+         Height          =   255
+         Left            =   120
+         TabIndex        =   11
+         Top             =   300
+         Width           =   1035
+      End
+      Begin VB.CheckBox Check_Éú²ú 
+         Caption         =   "Éú²úBOM"
+         Height          =   255
+         Left            =   2640
+         TabIndex        =   10
+         Top             =   660
+         Width           =   975
+      End
+      Begin VB.CheckBox Check_µ÷ÊÔ 
+         Caption         =   "µ÷ÊÔBOM"
+         Height          =   255
+         Left            =   1380
+         TabIndex        =   9
+         Top             =   660
+         Width           =   1155
+      End
+      Begin VB.CheckBox Check_ÁìÁÏ 
+         Caption         =   "ÁìÁÏBOM"
+         Height          =   255
+         Left            =   120
+         TabIndex        =   8
+         Top             =   660
+         Width           =   1155
+      End
+      Begin VB.CheckBox CheckPreBom 
+         Caption         =   "Ô¤BOM"
+         Height          =   255
+         Left            =   1380
+         TabIndex        =   7
+         Top             =   300
+         Width           =   1095
+      End
+   End
+   Begin MSComDlg.CommonDialog CommonDialog1 
+      Left            =   300
+      Top             =   2580
+      _ExtentX        =   847
+      _ExtentY        =   847
+      _Version        =   393216
+   End
    Begin VB.Frame Frame3 
       Caption         =   "¿â´æÀàĞÍ"
       Height          =   615
       Left            =   3000
-      TabIndex        =   6
+      TabIndex        =   4
       Top             =   120
-      Width           =   1275
+      Width           =   1335
       Begin VB.ComboBox Combo1 
          Height          =   300
          ItemData        =   "MakeBOM.frx":628A
          Left            =   60
          List            =   "MakeBOM.frx":6297
-         TabIndex        =   7
+         TabIndex        =   5
          Text            =   "TP1"
-         Top             =   180
-         Width           =   1155
+         Top             =   240
+         Width           =   1215
       End
    End
    Begin VB.Frame Frame2 
       Caption         =   "»úĞÍÃû³Æ"
       Height          =   615
-      Left            =   300
-      TabIndex        =   4
+      Left            =   180
+      TabIndex        =   2
       Top             =   120
-      Width           =   2475
+      Width           =   2775
       Begin VB.TextBox ItemNameText 
          BeginProperty Font 
             Name            =   "ËÎÌå"
@@ -59,28 +122,11 @@ Begin VB.Form MainForm
             Italic          =   0   'False
             Strikethrough   =   0   'False
          EndProperty
-         Height          =   330
+         Height          =   285
          Left            =   60
-         TabIndex        =   5
-         Top             =   180
-         Width           =   2355
-      End
-   End
-   Begin VB.Frame Frame1 
-      Caption         =   "tsvÎÄ¼ş±àÂë"
-      Height          =   615
-      Left            =   300
-      TabIndex        =   2
-      Top             =   840
-      Width           =   1395
-      Begin VB.ComboBox UTFCombo 
-         Height          =   300
-         ItemData        =   "MakeBOM.frx":62AA
-         Left            =   60
-         List            =   "MakeBOM.frx":62BA
          TabIndex        =   3
          Top             =   240
-         Width           =   1275
+         Width           =   2655
       End
    End
    Begin MSComctlLib.StatusBar StatusBar1 
@@ -88,31 +134,33 @@ Begin VB.Form MainForm
       Height          =   315
       Left            =   0
       TabIndex        =   1
-      Top             =   1755
-      Width           =   4620
-      _ExtentX        =   8149
+      Top             =   3825
+      Width           =   4485
+      _ExtentX        =   7911
       _ExtentY        =   556
       _Version        =   393216
       BeginProperty Panels {8E3867A5-8586-11D1-B16A-00C0F0283628} 
          NumPanels       =   2
          BeginProperty Panel1 {8E3867AB-8586-11D1-B16A-00C0F0283628} 
-            Object.Width           =   6703
-            MinWidth        =   6703
-            Text            =   "ÇëÑ¡Ôñ.BOMÎÄ¼ş..."
-            TextSave        =   "ÇëÑ¡Ôñ.BOMÎÄ¼ş..."
+            Object.Width           =   6350
+            MinWidth        =   6350
+            Text            =   "Ready"
+            TextSave        =   "Ready"
             Key             =   "status_text"
+            Object.ToolTipText     =   "³ÌĞòÔËĞĞ×´Ì¬ÃèÊö"
          EndProperty
          BeginProperty Panel2 {8E3867AB-8586-11D1-B16A-00C0F0283628} 
             Alignment       =   1
-            Object.Width           =   1411
-            MinWidth        =   1411
+            Object.Width           =   1693
+            MinWidth        =   1693
             Text            =   "0%"
             TextSave        =   "0%"
             Key             =   "process_text"
+            Object.ToolTipText     =   "Ö´ĞĞ½ø¶È"
          EndProperty
       EndProperty
    End
-   Begin VB.CommandButton MakeBOM_Command 
+   Begin VB.CommandButton Command_ImportBom 
       Caption         =   "Éú³ÉBOM"
       BeginProperty Font 
          Name            =   "ËÎÌå"
@@ -123,26 +171,15 @@ Begin VB.Form MainForm
          Italic          =   0   'False
          Strikethrough   =   0   'False
       EndProperty
-      Height          =   615
-      Left            =   1920
+      Height          =   1335
+      Left            =   180
       OLEDropMode     =   1  'Manual
       TabIndex        =   0
-      Top             =   840
-      Width           =   2355
-   End
-   Begin MSComDlg.CommonDialog CommonDialog1 
-      Left            =   -240
-      Top             =   540
-      _ExtentX        =   847
-      _ExtentY        =   847
-      _Version        =   393216
-   End
-   Begin VB.Menu menu_null 
-      Caption         =   ""
-      Enabled         =   0   'False
+      Top             =   2100
+      Width           =   4155
    End
    Begin VB.Menu menu_lib 
-      Caption         =   "·ÖÀà·â×°¿â"
+      Caption         =   "²é¿´·â×°¿â"
    End
    Begin VB.Menu menu_update 
       Caption         =   "·â×°¿â¸üĞÂ"
@@ -162,19 +199,26 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+'*************************************************************************
+'**Ä£ ¿é Ãû£ºMainForm
+'**Ëµ    Ã÷£ºTP-LINK SMB Switch Product Line Hardware Group
+'**          °æÈ¨ËùÓĞ2011 - 2012(C)
+'**
+'**´´ ½¨ ÈË£ºShenhao
+'**ÈÕ    ÆÚ£º2011-10-22 12:08:02
+'**ĞŞ ¸Ä ÈË£º
+'**ÈÕ    ÆÚ£º
+'**Ãè    Êö£º´°¿ÚÖ÷ÌåÊµÏÖÎÄ¼ş£¬½ö°üº¬´°¿Ú¹¦ÄÜÊµÏÖ´úÂëÒÔ¼°Ö´ĞĞÁ÷³Ì¿ØÖÆ
+'**°æ    ±¾£ºV3.2.38
+'*************************************************************************
+
 Option Explicit
-
-
-
-'=========================================================
-'´°¿ÚÖ÷ÌåÊµÏÖÎÄ¼ş£¬½ö°üº¬´°¿Ú¹¦ÄÜÊµÏÖ´úÂëÒÔ¼°Ö´ĞĞÁ÷³Ì¿ØÖÆ
-'=========================================================
 
 Private Sub Form_Load()
     
     '³õÊ¼»¯Êı¾İ¿â
     If InitLib(App.Path & "\STD.lst") = False Then
-        MakeBOM_Command.Enabled = False
+        Command_ImportBom.Enabled = False
     End If
     
     '»ñÈ¡ÉÏ´Î¹¤×÷Ä¿Â¼
@@ -184,7 +228,6 @@ Private Sub Form_Load()
     ItemNameText.Text = ItemName
     
     '»ñÈ¡³ÌĞòÉèÖÃ
-    UTFCombo.Text = GetSetting(App.EXEName, "tsvEncoder", "tsvÎÄ¼ş±àÂë", "UTF-8")
     Combo1.Text = GetSetting(App.EXEName, "SelectStorage", "¿â´æÀàĞÍ", "TP1")
     
     '³õÊ¼»¯´°¿ÚÎ»ÖÃºÍ×´Ì¬
@@ -211,13 +254,12 @@ End Sub
 
 Private Sub Form_OLEDragDrop(Data As DataObject, Effect As Long, Button As Integer, Shift As Integer, X As Single, Y As Single)
     'Ö±½Óµ÷ÓÃ°´Å¥µÄÍÏ·ÅĞ§¹û
-    MakeBOM_Command_OLEDragDrop Data, Effect, Button, Shift, X, Y
+    Command_ImportBom_OLEDragDrop Data, Effect, Button, Shift, X, Y
     
 End Sub
 
 Private Sub Form_QueryUnload(Cancel As Integer, UnloadMode As Integer)
     '³ÌĞòÅäÖÃÊı¾İ
-    SaveSetting App.EXEName, "tsvEncoder", "tsvÎÄ¼ş±àÂë", UTFCombo.Text
     SaveSetting App.EXEName, "SelectStorage", "¿â´æÀàĞÍ", Combo1.Text
     
     SaveSetting App.EXEName, "ProjectDir", "ÉÏ´Î¹¤×÷Ä¿Â¼", ProjectDir
@@ -256,7 +298,7 @@ Private Sub menu_lib_Click()
 End Sub
 
 Private Sub menu_update_Click()
-    frmUpdateLib.Show 1
+    frmLib.Show 1
 End Sub
 
 Private Sub menu_winpos_Click()
@@ -273,27 +315,7 @@ Private Sub menu_winpos_Click()
     
 End Sub
 
-Private Sub UTFCombo_Click()
-    SaveSetting App.EXEName, "tsvEncoder", "tsvÎÄ¼ş±àÂë", UTFCombo.Text
-End Sub
 
-Private Sub UTFCombo_LostFocus()
-    Select Case UTFCombo.Text
-    Case "UTF-8"
-            
-    Case "ANSI"
-        
-    Case "UTF-16LE"
-        
-    Case "UTF-16BE"
-        
-    Case Else
-        MsgBox "²»Ö§³ÖµÄÎÄ±¾ÎÄ¼ş±àÂë£¡", vbCritical + vbMsgBoxSetForeground + vbOKOnly, "´íÎó"
-        UTFCombo.Text = GetSetting(App.EXEName, "tsvEncoder", "tsvÎÄ¼ş±àÂë", "UTF-8")
-    End Select
-    
-    SaveSetting App.EXEName, "tsvEncoder", "tsvÎÄ¼ş±àÂë", UTFCombo.Text
-End Sub
 
 Private Sub Combo1_Click()
     SaveSetting App.EXEName, "SelectStorage", "¿â´æÀàĞÍ", Combo1.Text
@@ -315,8 +337,52 @@ Private Sub Combo1_LostFocus()
     SaveSetting App.EXEName, "SelectStorage", "¿â´æÀàĞÍ", Combo1.Text
 End Sub
 
+Private Sub CheckAll_Click()
 
-Private Sub MakeBOM_Command_OLEDragDrop(Data As DataObject, Effect As Long, Button As Integer, Shift As Integer, X As Single, Y As Single)
+    If CheckAll.Value = Checked Then
+        CheckPreBom.Value = Checked
+        CheckNcDbg.Value = Checked
+        Check_ÁìÁÏ.Value = Checked
+        Check_µ÷ÊÔ.Value = Checked
+        Check_Éú²ú.Value = Checked
+    End If
+
+End Sub
+
+Private Sub CheckCheck()
+    If CheckPreBom.Value = Checked And _
+       CheckNcDbg.Value = Checked And _
+       Check_ÁìÁÏ.Value = Checked And _
+       Check_µ÷ÊÔ.Value = Checked And _
+       Check_Éú²ú.Value = Checked Then
+       
+        CheckAll.Value = Checked
+    Else
+        CheckAll.Value = Unchecked
+    End If
+End Sub
+
+Private Sub Check_µ÷ÊÔ_Click()
+    CheckCheck
+End Sub
+
+Private Sub Check_ÁìÁÏ_Click()
+    CheckCheck
+End Sub
+
+Private Sub Check_Éú²ú_Click()
+    CheckCheck
+End Sub
+
+Private Sub CheckNcDbg_Click()
+    CheckCheck
+End Sub
+
+Private Sub CheckPreBom_Click()
+    CheckCheck
+End Sub
+
+Private Sub Command_ImportBom_OLEDragDrop(Data As DataObject, Effect As Long, Button As Integer, Shift As Integer, X As Single, Y As Single)
     'ÔÊĞíÍÏ·Å²Ù×÷
     Dim PLResultFile As Variant
     Dim filePath As String
@@ -344,42 +410,91 @@ Private Sub MakeBOM_Command_OLEDragDrop(Data As DataObject, Effect As Long, Butt
             Exit Sub
         End If
         
-        BomStage_Two
+        BomStage_One
     End If
 End Sub
 
-Private Sub MakeBOM_Command_Click()
+Private Sub Command_ImportBom_Click()
     Dim GetPath As String
     ProjectDir = GetSetting(App.EXEName, "ProjectDir", "ÉÏ´Î¹¤×÷Ä¿Â¼", "E:\")
     
-    If BomFilePath = "" Then
-        CommonDialog1.InitDir = ProjectDir
-        CommonDialog1.FileName = ""
-        CommonDialog1.DialogTitle = "ÇëÑ¡Ôñ.BOMÎÄ¼ş"
-        CommonDialog1.Filter = "All File(*.*)|*.*|BOM files(*.BOM)|*.BOM"
-        CommonDialog1.FilterIndex = 2
-        CommonDialog1.ShowOpen
-        
-        GetPath = CommonDialog1.FileName
-        
-        If GetPath = "" Then
-            Exit Sub
-        End If
-        
-        Dim isbom As String
-        isbom = Right(GetPath, Len(GetPath) - InStrRev(GetPath, ".") + 1)
+    CommonDialog1.InitDir = ProjectDir
+    CommonDialog1.FileName = ""
+    CommonDialog1.DialogTitle = "ÇëÑ¡Ôñ.BOMÎÄ¼ş"
+    CommonDialog1.Filter = "All File(*.*)|*.*|BOM files(*.BOM)|*.BOM"
+    CommonDialog1.FilterIndex = 2
+    CommonDialog1.ShowOpen
     
-        If isbom <> ".BOM" And isbom <> ".bom" Then
-            MsgBox "±ØĞëÎª.BOMÎÄ¼ş£¡", vbMsgBoxSetForeground + vbExclamation + vbOKOnly, "¾¯¸æ"
-            ClearPath
+    GetPath = CommonDialog1.FileName
+    
+    If GetPath = "" Then
+        Exit Sub
+    End If
+    
+    Dim isbom As String
+    isbom = Right(GetPath, Len(GetPath) - InStrRev(GetPath, ".") + 1)
+
+    If isbom <> ".BOM" And isbom <> ".bom" Then
+        MsgBox "±ØĞëÎª.BOMÎÄ¼ş£¡", vbMsgBoxSetForeground + vbExclamation + vbOKOnly, "¾¯¸æ"
+        ClearPath
+        Exit Sub
+    End If
+    
+    BuildProjectPath GetPath
+
+    BomStage_One
+    
+End Sub
+
+Private Sub BomStage_One()
+    
+    '==============================================
+    '±¾½×¶Î½«»áÉú³ÉBOM Maker File
+    '1.µ¼ÈëtsvÎÄ¼şĞÅÏ¢µ½bmfÎÄ¼şÖĞ
+    '2.±£ÁôÔø¾­ÓĞµÄ²¿·ÖĞÅÏ¢ ÈçÃèÊö ¿â´æµÈ
+    '3.½«ËùĞèĞÅÏ¢ÕûÀíÎª±ê×¼¸ñÊ½ ±ãÓÚºóÒ»½×¶Î¶ÁÈ¡
+    '4.Ê¹ÓÃÎÄ±¾¸ñÊ½±ãÓÚ°æ±¾¿ØÖÆ
+    '==============================================
+    
+    Dim GetPath As String
+    
+    KillBom
+
+    Process 2, "¶ÁÈ¡.BOMÎÄ¼şĞÅÏ¢ ..."
+    '¶ÁÈ¡.BOMÎÄ¼şĞÅÏ¢
+    If ReadBomFile = False Then
+        Process 100, ".BOMÎÄ¼şĞÅÏ¢ ...¶ÁÈ¡´íÎó£¡"
+        ClearPath
+        Exit Sub
+    End If
+    
+    '´´½¨ÅúÁ¿²éÑ¯ÎÄ¼ş
+    BomMakePLExcel
+    
+    'Ìî³äÀ´×ÔorCAD BOMµÄÊı¾İ²¢ÇÒ´´½¨ĞÂµÄ.bmfÎÄ¼ş
+    BmfMaker
+    
+    'Ä¬ÈÏtsvÎÄ¼şÔÚ¹¤×÷Ä¿Â¼ÏÂ
+    tsvFilePath = ProjectDir + "fnd_gfm.tsv"
+    
+    '²é¿´.BOMÄ¿Â¼ÏÂÊÇ·ñÓĞtsvÎÄ¼ş£¬ÓĞµÄ»°Ö±½Óµ¼Èë Ã»ÓĞ¾ÍÑ¯ÎÊÊÇ·ñ½øÈëERP²éÑ¯
+    If Dir(tsvFilePath) = "" Then
+    
+        Dim resultL As VbMsgBoxResult
+        resultL = MsgBox("ÔÚ¹¤×÷Ä¿Â¼ÏÂÎ´ÕÒµ½ºÏ·¨µÄÅúÁ¿²éÑ¯½á¹ûÎÄ¼ş£¡" & vbCrLf & vbCrLf & vbCrLf & _
+                  "ÊÇ·ñ´ò¿ªERPÏµÍ³½øĞĞÅúÁ¿²éÑ¯£¿" & vbCrLf & vbCrLf & _
+                  "ÊÇ-µÇÂ¼ERPÏµÍ³¿ªÊ¼²éÑ¯" & vbCrLf & vbCrLf & _
+                  "·ñ-Ñ¡ÔñTSVÎÄ¼şÂ·¾¶" & vbCrLf, _
+                  vbQuestion + vbMsgBoxSetForeground + vbYesNoCancel)
+                  
+        If resultL = vbYes Then
+                  
+            AutoLoginERP "RD_ENGINEER", "123456"
+            'FindERP
             Exit Sub
-        Else
-            BuildProjectPath GetPath
             
-            BomStage_One
-        End If
-    Else
-        If tsvFilePath = "" Then
+        ElseIf resultL = vbNo Then
+        
             CommonDialog1.FileName = ""
             CommonDialog1.DialogTitle = "ÇëÑ¡Ôñ.tsvÎÄ¼ş"
             CommonDialog1.Filter = "All File(*.*)|*.*|tsv files(*.tsv)|*.tsv"
@@ -401,149 +516,182 @@ Private Sub MakeBOM_Command_Click()
             Else
                 tsvFilePath = GetPath
             End If
-        End If
-    
-        BomStage_Two
-    End If
-End Sub
-
-
-Private Sub BomStage_One()
-
-    Dim msgstr As String
-    
-    'É¾³ı¹ıÊ±µÄÎÄ¼ş
-    msgstr = SaveAsPath & "_PCBA_BOM.xls" & vbCrLf
-    msgstr = msgstr + SaveAsPath & "_ÅúÁ¿×ÊÔ´²éÑ¯.xls" & vbCrLf
-    msgstr = msgstr + SaveAsPath & "_None_PartRef.xls" & vbCrLf
-    msgstr = msgstr + SaveAsPath & "_NC_DBG.xls" & vbCrLf & vbCrLf
-    msgstr = msgstr + "ÒÑ¾­´æÔÚ£¬Ê¹ÓÃÕâĞ©ÎÄ¼ş£¿" & vbCrLf
-    
-    If Dir(SaveAsPath & "_PCBA_BOM.xls") <> "" _
-            Or Dir(SaveAsPath & "_ÅúÁ¿×ÊÔ´²éÑ¯.xls") <> "" _
-                Or Dir(SaveAsPath & "_None_PartRef.xls") <> "" _
-                Or Dir(SaveAsPath & "_NC_DBG.xls") <> "" Then
-        If MsgBox(msgstr, vbInformation + vbMsgBoxSetForeground + vbYesNo) = vbYes Then
-            Process 10, "¶ÁÈ¡Ôª¼şÊı..."
-            CalcPartNum
             
-            Process 20, "¿ªÊ¼Éú³ÉBOMµÚ2½×¶Î£¬Ñ¡ÔñtsvÎÄ¼şÂ·¾¶..."
-            If tsvFilePath = "" Then
-                MakeBOM_Command_Click
-            Else
-                BomStage_Two
-            End If
-            
+        ElseIf resultL = vbCancel Then
             Exit Sub
         Else
-            KillExcel SaveAsPath & "_PCBA_BOM.xls"
-            KillExcel SaveAsPath & "_ÅúÁ¿×ÊÔ´²éÑ¯.xls"
-            KillExcel SaveAsPath & "_None_PartRef.xls"
-            KillExcel SaveAsPath & "_NC_DBG.xls"
+            Exit Sub
         End If
     End If
     
-    Process 2, "¶ÁÈ¡.BOMÎÄ¼şĞÅÏ¢ ..."
-    '¶ÁÈ¡.BOMÎÄ¼şĞÅÏ¢
-    If ReadBomFile = False Then
-        Process 100, ".BOMÎÄ¼şĞÅÏ¢ ...¶ÁÈ¡´íÎó£¡"
-        ClearPath
-        Exit Sub
-    End If
+    'µ¼ÈëtsvÎÄ¼şÄÚĞÅÏ¢
+    ImportTSV
     
-    'ÓÉÄ£°å´´½¨ExcelÎÄ¼ş
-    ExcelCreate
+    '×ª»»BMFÎÄ¼ş¸ñÊ½±ÜÃâ³öÏÖÂÒÂë
+    BmfToAnsi
     
-    'Ìî³äÀ´×ÔorCAD BOMµÄÊı¾İ
-    BomDraft
+    '²éÕÒbmfÎÄ¼şÖĞÓĞÁÏºÅ£¬µ«ÊÇÃ»ÓĞÎïÁÏÃèÊöµÄĞĞ
+    '¸ø³öÌáÊ¾ÊÇ·ñ×Ô¶¯ÁªÍø¸üĞÂÎïÁÏÃèÊö
+    'GetInfoFromERP
+    'GetInfoFromERP "RD_ENGINEER", "123456"
     
-    ShellExecute 0, "open", ProjectDir & "\BOM", "", "", 1
-    
-    If MsgBox("ÊÇ·ñ´ò¿ªERPÏµÍ³½øĞĞÅúÁ¿²éÑ¯£¿", vbQuestion + vbMsgBoxSetForeground + vbYesNo) = vbYes Then
-        AutoLoginERP "RD_ENGINEER", "123456"
-        'FindERP
-    End If
+    'Ö±½Ó½øÈëµÚ2½×¶Î Éú³ÉExcel¸ñÊ½BOM½×¶Î
+    BomStage_Two
     
 End Sub
 
 
+'*************************************************************************
+'**º¯ Êı Ãû£ºBomStage_Two
+'**Êä    Èë£ºÎŞ
+'**Êä    ³ö£ºÎŞ
+'**¹¦ÄÜÃèÊö£º¸ù¾İCheckBoxµÄ×´Ì¬´´½¨ExcelÎÄ¼şºÍÉú³ÉÏàÓ¦µÄBOM
+'            Á÷³ÌÈçÏÂ:
+'            1.¸ù¾İÄ£°æ´´½¨Excel BOM
+'            2.¸ù¾İĞèÒªµ÷ÕûExcel ¸ñÊ½
+'            3.¶ÁÈ¡bmf(BOM Maker File)ÎÄ¼ş ½«ĞÅÏ¢ÌîÈëExcel
+'            4.¸ù¾İĞÅÏ¢µ÷ÕûExcel¸ñÊ½
+'            5.É¨ÃèExcel¸ñÊ½ ĞŞÕı²¿·Ö¸ñÊ½
+'            6.Íê³É
+'            ×¢Òâ£ºÁìÁÏBOMÖĞµÄ¿â´æĞÅÏ¢±ØĞë±£Ö¤ÊÇ×îĞÂµÄ¡£
+'                  Òò´Ë³ÌĞò»á¼ì²étsvÎÄ¼şµÄ²úÉúÊ±¼ä
+'                  Ê±¼ä²»ÔÚÈıÌìÄÚ»áÌáÊ¾£¬ÖØĞÂ²éÑ¯ÿ
+'**È«¾Ö±äÁ¿£º
+'**µ÷ÓÃÄ£¿é£º
+'**×÷    Õß£ºShenhao
+'**ÈÕ    ÆÚ£º2011-10-22 12:11:09
+'**ĞŞ ¸Ä ÈË£º
+'**ÈÕ    ÆÚ£º
+'**°æ    ±¾£ºV3.2.38
+'*************************************************************************
 Public Sub BomStage_Two()
     
-    Dim msgstr As String
-    'É¾³ı¹ıÊ±µÄÎÄ¼ş
-    'msgstr = SaveAsPath & "_ÁìÁÏBOM.xls" & vbCrLf
-    'msgstr = msgstr + SaveAsPath & "_Éú²úBOM.xls" & vbCrLf
-    'msgstr = msgstr + SaveAsPath & "_µ÷ÊÔBOM.xls" & vbCrLf & vbCrLf
-    'msgstr = msgstr + "ÒÑ¾­´æÔÚ£¬ÊÇ·ñÉ¾³ıÒÔ±ãÖØĞÂÉú³É£¿" & vbCrLf
-    
-    If Dir(SaveAsPath & "_ÁìÁÏBOM.xls") <> "" _
-            Or Dir(SaveAsPath & "_Éú²úBOM.xls") <> "" _
-                Or Dir(SaveAsPath & "_µ÷ÊÔBOM.xls") <> "" Then
-        'If MsgBox(msgstr, vbInformation + vbMsgBoxSetForeground + vbYesNo) = vbYes Then
-        KillExcel SaveAsPath & "_ÁìÁÏBOM.xls"
-        KillExcel SaveAsPath & "_Éú²úBOM.xls"
-        KillExcel SaveAsPath & "_µ÷ÊÔBOM.xls"
-        'Else
-        '    Exit Sub
-        'End If
-    End If
+    'ÓÉÄ£°å´´½¨ExcelÎÄ¼ş
+    BomCreate
     
     'Êä³öËùÓĞBOM
-    If CreateAllBOM = False Then
-        Process 100, "´´½¨BOMÎÄ¼şÊ§°Ü£¡"
-        GoTo ErrorHandle
-    End If
+    'If CreateAllBOM = False Then
+    '    Process 100, "´´½¨BOMÎÄ¼şÊ§°Ü£¡"
+    '    GoTo ErrorHandle
+    'End If
     'µ÷Õû²¿·ÖBOM¸ñÊ½»òÊı¾İ
-    If BomAdjust = False Then
-        Process 100, "µ÷ÕûBOMÎÄ¼şÊ§°Ü£¡"
-        GoTo ErrorHandle
-    End If
+    'If BomAdjust = False Then
+    '    Process 100, "µ÷ÕûBOMÎÄ¼şÊ§°Ü£¡"
+    '    GoTo ErrorHandle
+    'End If
     
     'Êä³öÍêÕûBOM
-    If ImportTSV(SaveAsPath & "_PCBA_BOM.xls", 80) = False Then
-        Process 100, "tsvÎÄ¼ş´íÎó£¡Çë¸üĞÂtsvÎÄ¼ş£¡"
-        GoTo ErrorHandle
-    End If
+    'If ImportTSV(SaveAsPath & "_PCBA_BOM.xls", 80) = False Then
+    '    Process 100, "tsvÎÄ¼ş´íÎó£¡Çë¸üĞÂtsvÎÄ¼ş£¡"
+    '    GoTo ErrorHandle
+    'End If
     
-    If ImportTSV(SaveAsPath & "_ÁìÁÏBOM.xls", 84) = False Then
-        Process 100, "tsvÎÄ¼ş´íÎó£¡Çë¸üĞÂtsvÎÄ¼ş£¡"
-        GoTo ErrorHandle
-    End If
+    'If ImportTSV(SaveAsPath & "_ÁìÁÏBOM.xls", 84) = False Then
+    '    Process 100, "tsvÎÄ¼ş´íÎó£¡Çë¸üĞÂtsvÎÄ¼ş£¡"
+    '    GoTo ErrorHandle
+    'End If
     
-    If ImportTSV(SaveAsPath & "_µ÷ÊÔBOM.xls", 88) = False Then
-        Process 100, "tsvÎÄ¼ş´íÎó£¡Çë¸üĞÂtsvÎÄ¼ş£¡"
-        GoTo ErrorHandle
-    End If
+    'If ImportTSV(SaveAsPath & "_µ÷ÊÔBOM.xls", 88) = False Then
+    '    Process 100, "tsvÎÄ¼ş´íÎó£¡Çë¸üĞÂtsvÎÄ¼ş£¡"
+    '    GoTo ErrorHandle
+    'End If
     
-    If ImportTSV(SaveAsPath & "_Éú²úBOM.xls", 92) = False Then
-        Process 100, "tsvÎÄ¼ş´íÎó£¡Çë¸üĞÂtsvÎÄ¼ş£¡"
-        GoTo ErrorHandle
-    End If
+    'If ImportTSV(SaveAsPath & "_Éú²úBOM.xls", 92) = False Then
+    '    Process 100, "tsvÎÄ¼ş´íÎó£¡Çë¸üĞÂtsvÎÄ¼ş£¡"
+    '    GoTo ErrorHandle
+    'End If
     
-    '´ò¿ªÉú³ÉµÄBOM£¬ÒÔ±¸¼ì²é
-    'ShellExecute 0, "open", SaveAsPath & "_PCBA_BOM.xls", "", "", 1
-    'ShellExecute 0, "open", SaveAsPath & "_NC_DBG.xls", "", "", 1
-    'ShellExecute 0, "open", SaveAsPath & "_None_PartRef.xls", "", "", 1
-    
-    'ShellExecute 0, "open", SaveAsPath & "_ÁìÁÏBOM.xls", "", "", 1
-    'ShellExecute 0, "open", SaveAsPath & "_µ÷ÊÔBOM.xls", "", "", 1
-    'ShellExecute 0, "open", SaveAsPath & "_Éú²úBOM.xls", "", "", 1
+    '´ò¿ªÉú³ÉµÄBOMÄ¿Â¼
     ShellExecute 0, "open", ProjectDir & "\BOM", "", "", 1
     
     'Çå¿Õ³ÌĞòÒÀÀµµÄÂ·¾¶ĞÅÏ¢£¬±ãÓÚÏÂ´Î×ª»»¿ªÊ¼
     ClearPath
     
     Process 100, "Íê³É£¡"
+    
+     '============================================
+    'ÏÔÊ¾½á¹ûĞÅÏ¢ Ôª¼şÊıÁ¿¸öÊı
+    '============================================
+    'PartNum(0) : NcPartNum
+    'PartNum(1) : DbgPartNum
+    'PartNum(2) : DbNcPartNum
+    
+    'PartNum(3) : LeadPartNum
+    'PartNum(4) : SmtPartNum
+    'PartNum(5) : OtherPartNum
+    '============================================
+    
+    Dim msgstr As String
+    msgstr = "BOM Maker File´´½¨³É¹¦£¡" & vbCrLf & vbCrLf
+    msgstr = msgstr + "          ²å×°   Ôª¼ş¸öÊıÎª   £º " & PartNum(3) & vbCrLf
+    msgstr = msgstr + "          Ìù×°   Ôª¼ş¸öÊıÎª   £º " & PartNum(4) & vbCrLf
+    msgstr = msgstr + "          ÆäËû   Ôª¼ş¸öÊıÎª   £º " & PartNum(5) & vbCrLf & vbCrLf
+    
+    msgstr = msgstr + "          NC     Ôª¼ş¸öÊıÎª   £º " & PartNum(0) & vbCrLf
+    msgstr = msgstr + "          DBG    Ôª¼ş¸öÊıÎª   £º " & PartNum(1) & vbCrLf
+    msgstr = msgstr + "          DBG_NC Ôª¼ş¸öÊıÎª   £º " & PartNum(2) & vbCrLf & vbCrLf
+    msgstr = msgstr + "          Éú³ÉµÄbmfÎÄ¼ş²»½¨ÒéÊÖ¶¯ĞŞ¸Ä" & vbCrLf & vbCrLf
+    msgstr = msgstr + "    ×¢Òâ£ºÉú³ÉµÄBOMÎÄ¼şĞèÒª¼ì²éĞŞ¸Äºó²Å¿É¹©ÆÀÉó "
+    
+    MsgBox msgstr, vbInformation + vbOKOnly + vbMsgBoxSetForeground, "Ôª¼şĞÅÏ¢"
+    
     Exit Sub
 
 ErrorHandle:
     
     'É¾³ıÎ´ÄÜ³É¹¦Éú³ÉµÄÎÄ¼ş
+    KillBom
+    
+    ClearPath
+
+End Sub
+
+
+Private Sub BomCreate()
+    If CheckPreBom.Value = Checked Then
+        ExcelCreate BOM_Ô¤
+        CreateBOM BOM_Ô¤
+        
+    End If
+    
+    If CheckNcDbg.Value = Checked Then
+        ExcelCreate BOM_NCDBG
+        CreateBOM BOM_NCDBG
+        
+        ExcelCreate BOM_NONE
+        CreateBOM BOM_NONE
+        
+    End If
+    
+    If Check_ÁìÁÏ.Value = Checked Then
+        ExcelCreate BOM_ÁìÁÏ
+        CreateBOM BOM_ÁìÁÏ
+        
+    End If
+    
+    If Check_µ÷ÊÔ.Value = Checked Then
+        ExcelCreate BOM_µ÷ÊÔ
+        CreateBOM BOM_µ÷ÊÔ
+        
+    End If
+    
+    If Check_Éú²ú.Value = Checked Then
+        ExcelCreate BOM_Éú²ú
+        CreateBOM BOM_Éú²ú
+        
+    End If
+End Sub
+
+Private Sub KillBom()
+
+    KillExcel SaveAsPath & "_Ô¤BOM_BMF.xls"
+    KillExcel SaveAsPath & "_ÅúÁ¿×ÊÔ´²éÑ¯.xls"
+    KillExcel SaveAsPath & "_None_PartRef.xls"
+    KillExcel SaveAsPath & "_NC_DBG.xls"
+    
     KillExcel SaveAsPath & "_ÁìÁÏBOM.xls"
     KillExcel SaveAsPath & "_Éú²úBOM.xls"
     KillExcel SaveAsPath & "_µ÷ÊÔBOM.xls"
     
-    ClearPath
-
 End Sub
 
