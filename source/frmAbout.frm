@@ -7,6 +7,7 @@ Begin VB.Form frmAbout
    ClientTop       =   1935
    ClientWidth     =   5730
    ClipControls    =   0   'False
+   Icon            =   "frmAbout.frx":0000
    LinkTopic       =   "Form2"
    MaxButton       =   0   'False
    MinButton       =   0   'False
@@ -14,13 +15,13 @@ Begin VB.Form frmAbout
    ScaleMode       =   0  'User
    ScaleWidth      =   5380.766
    ShowInTaskbar   =   0   'False
-   StartUpPosition =   2  '屏幕中心
+   StartUpPosition =   1  '所有者中心
    Begin VB.PictureBox picIcon 
       AutoSize        =   -1  'True
       ClipControls    =   0   'False
       Height          =   540
       Left            =   240
-      Picture         =   "frmAbout.frx":0000
+      Picture         =   "frmAbout.frx":628A
       ScaleHeight     =   337.12
       ScaleMode       =   0  'User
       ScaleWidth      =   337.12
@@ -155,7 +156,7 @@ Private Sub Form_Load()
                              "shenhao(shenhao@tp-link.net)"
     lblDisclaimer.Caption = "TP-LINK Co., Ltd R&D SMB Product Line" & vbCrLf & vbCrLf & _
                             "Mobile :  13632623017" & vbCrLf & _
-                            "TEL    :  0755-26614348（64348）" & vbCrLf & _
+                            "TEL    :  0755-26615952（65952）" & vbCrLf & _
                             "Email  :  shenhao@tp-link.net"
                              
 End Sub

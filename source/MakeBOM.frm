@@ -7,7 +7,7 @@ Begin VB.Form MainForm
    ClientHeight    =   4140
    ClientLeft      =   150
    ClientTop       =   780
-   ClientWidth     =   4485
+   ClientWidth     =   4545
    BeginProperty Font 
       Name            =   "宋体"
       Size            =   9
@@ -22,7 +22,7 @@ Begin VB.Form MainForm
    MaxButton       =   0   'False
    OLEDropMode     =   1  'Manual
    ScaleHeight     =   4140
-   ScaleWidth      =   4485
+   ScaleWidth      =   4545
    StartUpPosition =   3  '窗口缺省
    Begin VB.Frame Frame1 
       Caption         =   "生成BOM"
@@ -81,8 +81,8 @@ Begin VB.Form MainForm
       End
    End
    Begin MSComDlg.CommonDialog CommonDialog1 
-      Left            =   300
-      Top             =   2580
+      Left            =   1080
+      Top             =   2520
       _ExtentX        =   847
       _ExtentY        =   847
       _Version        =   393216
@@ -135,8 +135,8 @@ Begin VB.Form MainForm
       Left            =   0
       TabIndex        =   1
       Top             =   3825
-      Width           =   4485
-      _ExtentX        =   7911
+      Width           =   4545
+      _ExtentX        =   8017
       _ExtentY        =   556
       _Version        =   393216
       BeginProperty Panels {8E3867A5-8586-11D1-B16A-00C0F0283628} 
@@ -179,13 +179,11 @@ Begin VB.Form MainForm
       Width           =   4155
    End
    Begin VB.Menu menu_lib 
-      Caption         =   "查看封装库"
-   End
-   Begin VB.Menu menu_update 
-      Caption         =   "封装库更新"
+      Caption         =   "封装库"
    End
    Begin VB.Menu menu_feedback 
       Caption         =   "反馈"
+      Visible         =   0   'False
    End
    Begin VB.Menu menu_about 
       Caption         =   "关于"
@@ -236,7 +234,9 @@ Private Sub Form_Load()
     X = GetSetting(App.EXEName, "WindowPosition", "Left")
     Y = GetSetting(App.EXEName, "WindowPosition", "Top")
         
-    If X <> "" Then
+    If X <> "" And Y <> "" And _
+       Val(X) < Screen.Width And Val(Y) < Screen.Height And _
+       Val(X) > 0 And Val(Y) > 0 Then
         Me.Move X, Y
     End If
     
@@ -294,10 +294,7 @@ End Sub
 
 Private Sub menu_lib_Click()
     '打开库文件
-    Shell "notepad " & LibFilePath, vbMaximizedFocus
-End Sub
-
-Private Sub menu_update_Click()
+    'Shell "notepad " & LibFilePath, vbMaximizedFocus
     frmLib.Show 1
 End Sub
 

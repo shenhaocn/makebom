@@ -6,21 +6,24 @@ Option Explicit
 '==============================================================================
 Private Const GW_CHILD = 5
 Private Const GW_HWNDNEXT = 2
+
 '==============================================================================
 ' API function declare ( API函数声明 )
 '==============================================================================
-Declare Function FindWindow Lib "user32" Alias "FindWindowA" (ByVal lpClassName As String, ByVal lpWindowName As String) As Long
-Declare Function GetWindow Lib "user32" (ByVal hwnd As Long, ByVal wCmd As Long) As Long
+Declare Function FindWindow Lib "User32" Alias "FindWindowA" (ByVal lpClassName As String, ByVal lpWindowName As String) As Long
+Declare Function GetWindow Lib "User32" (ByVal hwnd As Long, ByVal wCmd As Long) As Long
 
 Declare Function ShellExecute Lib "shell32.dll" Alias "ShellExecuteA" (ByVal hwnd As Long, ByVal lpOperation As String, ByVal lpFile As String, ByVal lpParameters As String, ByVal lpDirectory As String, ByVal nShowCmd As Long) As Long
 
-Declare Function SetWindowPos Lib "user32" (ByVal hwnd As Long, ByVal hWndInsertAfter As Long, ByVal X As Long, ByVal Y As Long, ByVal cx As Long, ByVal cy As Long, ByVal wFlags As Long) As Long
+Declare Function SetWindowPos Lib "User32" (ByVal hwnd As Long, ByVal hWndInsertAfter As Long, ByVal X As Long, ByVal Y As Long, ByVal cx As Long, ByVal cy As Long, ByVal wFlags As Long) As Long
 Const SWP_NOMOVE = &H2 '不更动目前视窗位置
 Const SWP_NOSIZE = &H1 '不更动目前视窗大小
 Const HWND_TOPMOST = -1 '设定为最上层
 Const HWND_NOTOPMOST = -2 '取消最上层设定
 Const FLAGS = SWP_NOMOVE Or SWP_NOSIZE
 
+
+'==============================================================================
 Public ProcInfo As StatusBar
 
 '将 窗口设定成永远保持在最上层
@@ -76,6 +79,49 @@ Function GetFileContents(filePath As String) As String
     Loop
     
     GetFileContents = cleanContents
+End Function
+
+'参数一 要写入的文件地址，参数二 修改的行数 ，参数三 写入或替换的字符串
+Public Function WriteTxt(strSourceFile As String, intRow As Long, StrLineNew As String)
+
+    Dim StrOut As String, tmpStrLine As String
+    Dim X As Long
+    If Dir(strSourceFile) <> "" Then
+        Open strSourceFile For Input As #1
+        Do While Not EOF(1)
+            Line Input #1, tmpStrLine
+            X = X + 1
+            If X = intRow Then tmpStrLine = StrLineNew
+            StrOut = StrOut & tmpStrLine & vbCrLf
+            'Debug.Print x
+        Loop
+        Close #1
+    Else
+        StrOut = StrLineNew
+    End If
+    
+    '多了一个换行符？
+    Open strSourceFile For Output As #1
+    Print #1, StrOut
+    Close #1
+
+End Function
+
+'返回 要输出的文本，参数一 文件地址，参数二 读取的行数
+Public Function ReadTxt(StrFile As String, intRow As Long) As String
+    Dim StrOut As String, tmpStrLine As String
+    Dim X As Long
+    
+    If Dir(StrFile, vbNormal) <> "" Then
+        Open StrFile For Input As #1
+        Do While Not EOF(1)
+            Line Input #1, tmpStrLine
+            X = X + 1
+            If X = intRow Then ReadTxt = tmpStrLine: Exit Do
+        Loop
+        Close #1
+    End If
+    
 End Function
 
 '参数为提示内容，返回结果为选择的目录

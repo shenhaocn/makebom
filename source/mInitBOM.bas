@@ -42,9 +42,19 @@ End Enum
 
 Function BuildProjectPath(srcPath As String)
     '集中生成所有需要的目录信息，在整个工程中，仅此可写入这些路径
+    Dim tmpPath As String
+    
     BomFilePath = srcPath
     ProjectDir = Left(BomFilePath, InStrRev(BomFilePath, "\") - 1) & "\"
-    SaveAsPath = ProjectDir & "BOM\" & MainForm.ItemNameText.Text
+    
+    If MainForm.ItemNameText.Text <> "" Then
+        SaveAsPath = ProjectDir & "BOM\" & MainForm.ItemNameText.Text
+    Else
+        tmpPath = Right(BomFilePath, Len(BomFilePath) - InStrRev(BomFilePath, "\"))
+        tmpPath = ProjectDir & "BOM\" & tmpPath
+        SaveAsPath = Left(tmpPath, InStrRev(tmpPath, ".") - 1)
+    End If
+    
     BmfFilePath = SaveAsPath & ".bmf"
     
     '在工程目录下创建BOM目录
@@ -670,7 +680,7 @@ End Function
 Function BmfToAnsi() As Boolean
     
     '转换编码格式
-    If UEFSaveTextFile(BmfFilePath, UEFLoadTextFile(BmfFilePath, UEF_UTF8), False, UEF_ANSI) = False Then
+    If UEFSaveTextFile(BmfFilePath, UEFLoadTextFile(BmfFilePath, UEF_AUTO), False, UEF_ANSI) = False Then
         MsgBox "bmf文件格式转换错误！", vbCritical + vbMsgBoxSetForeground + vbOKOnly, "错误"
     End If
  

@@ -3,15 +3,28 @@ Object = "{F9043C88-F6F2-101A-A3C9-08002B2F49FB}#1.2#0"; "COMDLG32.OCX"
 Object = "{831FDD16-0C5C-11D2-A9FC-0000F8754DA1}#2.0#0"; "MSCOMCTL.OCX"
 Begin VB.Form frmLib 
    Caption         =   "封装库"
-   ClientHeight    =   6795
+   ClientHeight    =   7050
    ClientLeft      =   60
    ClientTop       =   345
    ClientWidth     =   9195
+   Icon            =   "UpdateLib.frx":0000
    LinkTopic       =   "MakeLib"
    OLEDropMode     =   1  'Manual
-   ScaleHeight     =   6795
+   ScaleHeight     =   7050
    ScaleWidth      =   9195
-   StartUpPosition =   2  '屏幕中心
+   StartUpPosition =   1  '所有者中心
+   Begin VB.PictureBox Picture1 
+      AutoRedraw      =   -1  'True
+      BackColor       =   &H00000000&
+      Height          =   375
+      Left            =   240
+      ScaleHeight     =   315
+      ScaleWidth      =   8595
+      TabIndex        =   4
+      Top             =   4920
+      Visible         =   0   'False
+      Width           =   8655
+   End
    Begin VB.CommandButton Command2 
       Caption         =   "帮助"
       Height          =   615
@@ -21,13 +34,13 @@ Begin VB.Form frmLib
       Width           =   1935
    End
    Begin MSComctlLib.ListView ListView1 
-      Height          =   5535
+      Height          =   5775
       Left            =   240
       TabIndex        =   1
       Top             =   1080
       Width           =   8655
       _ExtentX        =   15266
-      _ExtentY        =   9763
+      _ExtentY        =   10186
       View            =   3
       LabelWrap       =   -1  'True
       HideSelection   =   0   'False
@@ -91,7 +104,7 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Option Explicit
-Private Declare Function LockWindowUpdate Lib "user32" (ByVal hWndLock As Long) As Long
+Private Declare Function LockWindowUpdate Lib "User32" (ByVal hWndLock As Long) As Long
 Private Declare Function GetTickCount Lib "kernel32" () As Long
 
 '分类库
@@ -218,7 +231,7 @@ Private Sub Command1_Click()
     End If
 End Sub
 
-Private Sub Command1_OLEDragDrop(Data As DataObject, Effect As Long, Button As Integer, Shift As Integer, x As Single, y As Single)
+Private Sub Command1_OLEDragDrop(Data As DataObject, Effect As Long, Button As Integer, Shift As Integer, X As Single, Y As Single)
     '允许拖放操作
     Dim PLResultFile As Variant
     Dim filePath As String
@@ -297,10 +310,12 @@ Private Sub LoadLibs()
         ListView1.ListItems(i - 1).SubItems(3) = LibAtom(1) & Space(1) & LibAtom(2)
     Next
     
+    UpdateListviewColor
+    
 End Sub
 
-Private Sub Form_OLEDragDrop(Data As DataObject, Effect As Long, Button As Integer, Shift As Integer, x As Single, y As Single)
-    Command1_OLEDragDrop Data, Effect, Button, Shift, x, y
+Private Sub Form_OLEDragDrop(Data As DataObject, Effect As Long, Button As Integer, Shift As Integer, X As Single, Y As Single)
+    Command1_OLEDragDrop Data, Effect, Button, Shift, X, Y
 End Sub
 
 Private Sub Form_Unload(Cancel As Integer)
@@ -322,17 +337,17 @@ Private Sub Form_Unload(Cancel As Integer)
     
 End Sub
 
-Private Sub ListView1_MouseDown(Button As Integer, Shift As Integer, x As Single, y As Single)
+Private Sub ListView1_MouseDown(Button As Integer, Shift As Integer, X As Single, Y As Single)
 On Error Resume Next
     Dim j As Long, i As Long
     
     '响应鼠标左键 和 右键事件 和 中键事件
     If Button = vbLeftButton Or Button = vbRightButton Or Button = vbMiddleButton Then
-        If ListView1.HitTest(x, y) Is Nothing Then
+        If ListView1.HitTest(X, Y) Is Nothing Then
             Exit Sub
         End If
         
-        j = ListView1.HitTest(x, y).Index
+        j = ListView1.HitTest(X, Y).Index
         ListView1.ListItems(j).Selected = True
         
         For i = 0 To 3
@@ -391,48 +406,31 @@ Private Sub menuTypeSub_Click(Index As Integer)
 
 End Sub
 
-'参数一 要写入的文件地址，参数二 修改的行数 ，参数三 写入或替换的字符串
-Public Function WriteTxt(strSourceFile As String, intRow As Long, StrLineNew As String)
-
-    Dim StrOut As String, tmpStrLine As String
-    Dim x As Long
-    If Dir(strSourceFile) <> "" Then
-        Open strSourceFile For Input As #1
-        Do While Not EOF(1)
-            Line Input #1, tmpStrLine
-            x = x + 1
-            If x = intRow Then tmpStrLine = StrLineNew
-            StrOut = StrOut & tmpStrLine & vbCrLf
-            'Debug.Print x
-        Loop
-        Close #1
-    Else
-        StrOut = StrLineNew
-    End If
+'ListView 隔行显示不同的颜色
+Private Sub UpdateListviewColor()
+    '此处设置隔行颜色不同
+    '图像控件需要设的属性
+    Picture1.BorderStyle = vbBSNone
+    Picture1.AutoRedraw = True
+    'Picture1.Visible = False
     
-    '多了一个换行符？
-    Open strSourceFile For Output As #1
-    Print #1, StrOut
-    Close #1
-
-End Function
-
-'返回 要输出的文本，参数一 文件地址，参数二 读取的行数
-Public Function ReadTxt(StrFile As String, intRow As Long) As String
-    Dim StrOut As String, tmpStrLine As String
-    Dim x As Long
+    '高度为两行列表
+    Picture1.Width = ListView1.Width
+    Picture1.Height = ListView1.ListItems(1).Height * 2
     
-    If Dir(StrFile, vbNormal) <> "" Then
-        Open StrFile For Input As #1
-        Do While Not EOF(1)
-            Line Input #1, tmpStrLine
-            x = x + 1
-            If x = intRow Then ReadTxt = tmpStrLine: Exit Do
-        Loop
-        Close #1
-    End If
+    '画出两行间隔颜色
+    Picture1.ScaleMode = vbUser
+    Picture1.ScaleHeight = 2
+    Picture1.ScaleWidth = 1
+    Picture1.Line (0, 0)-(1, 1), vbWhite, BF
+    Picture1.Line (0, 1)-(1, 2), RGB(220, 226, 241), BF
     
-End Function
+    '最关键的地方
+   ListView1.PictureAlignment = lvwTile
+   ListView1.Picture = Picture1.Image
+    
+End Sub
+
 
 'ListView的默认的排序功能都是按照字符串顺序排的，那样对数字顺序时，如果升序排列，9会排在10的后面。
 '以下程序将修正这一问题
