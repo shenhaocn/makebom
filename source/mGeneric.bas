@@ -92,7 +92,11 @@ Public Function WriteTxt(strSourceFile As String, intRow As Long, StrLineNew As 
             Line Input #1, tmpStrLine
             X = X + 1
             If X = intRow Then tmpStrLine = StrLineNew
-            StrOut = StrOut & tmpStrLine & vbCrLf
+            If Not EOF(1) Then
+                StrOut = StrOut & tmpStrLine & vbCrLf
+            Else
+                StrOut = StrOut & tmpStrLine
+            End If
             'Debug.Print x
         Loop
         Close #1

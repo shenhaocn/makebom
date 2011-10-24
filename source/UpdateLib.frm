@@ -330,8 +330,14 @@ Private Sub Form_Unload(Cancel As Integer)
     For i = 2 To UBound(LibLine) - 1
         LibAtom = Split(LibLine(i), Space(1))
         If UBound(LibAtom) <> 3 Then
-            MsgBox "库文件STD.lst不完整或错误！请手动修改STD.lst库文件！", vbCritical + vbMsgBoxSetForeground + vbOKOnly, "错误"
-            End
+            If MsgBox("库文件STD.lst修改不完整！确认退出？" & vbCrLf & vbCrLf & _
+                      "提示：" & vbCrLf & "退出后请手动修改为正确文件，否则程序无法正确运行！", _
+                      vbMsgBoxSetForeground + vbQuestion + vbYesNo, "错误") = vbYes Then
+                      
+                End
+            Else
+                Cancel = True
+            End If
         End If
     Next i
     
