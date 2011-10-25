@@ -68,7 +68,7 @@ Begin VB.Form frmAbout
    Begin VB.Label lblTitle 
       Caption         =   "MakeBOM"
       ForeColor       =   &H00000000&
-      Height          =   480
+      Height          =   240
       Left            =   1050
       TabIndex        =   5
       Top             =   240
@@ -85,10 +85,10 @@ Begin VB.Form frmAbout
    End
    Begin VB.Label lblVersion 
       Caption         =   "版本"
-      Height          =   225
+      Height          =   465
       Left            =   1050
       TabIndex        =   6
-      Top             =   780
+      Top             =   540
       Width           =   3885
    End
    Begin VB.Label lblDisclaimer 
@@ -149,12 +149,12 @@ Private Sub Form_Load()
     SetWindowsPos_TopMost Me.hwnd
     
     Me.Caption = "关于 " & App.Title
-    lblVersion.Caption = "版本 " & App.Major & "." & App.Minor & "." & App.Revision
+    lblVersion.Caption = "主程序版本 " & App.Major & "." & App.Minor & "." & App.Revision & vbCrLf & "库文件版本 " & GetLibsVersion
     lblTitle.Caption = App.Title
     lblDescription.Caption = "BOM直接生成工具" & vbCrLf & vbCrLf & _
                              "by SMB Product Line Hardware Group" & vbCrLf & vbCrLf & _
                              "shenhao(shenhao@tp-link.net)"
-    lblDisclaimer.Caption = "TP-LINK Co., Ltd R&D SMB Product Line" & vbCrLf & vbCrLf & _
+    lblDisclaimer.Caption = "TP-LINK Co., Ltd SMB Product Line" & vbCrLf & vbCrLf & _
                             "Mobile :  13632623017" & vbCrLf & _
                             "TEL    :  0755-26615952（65952）" & vbCrLf & _
                             "Email  :  shenhao@tp-link.net"

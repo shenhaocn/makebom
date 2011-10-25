@@ -563,48 +563,8 @@ End Sub
 '*************************************************************************
 Public Sub BomStage_Two()
     
-    '由模板创建Excel文件
+    '由模板创建Excel文件 并生成需要的Excel BOM文件
     BomCreate
-    
-    '输出所有BOM
-    'If CreateAllBOM = False Then
-    '    Process 100, "创建BOM文件失败！"
-    '    GoTo ErrorHandle
-    'End If
-    '调整部分BOM格式或数据
-    'If BomAdjust = False Then
-    '    Process 100, "调整BOM文件失败！"
-    '    GoTo ErrorHandle
-    'End If
-    
-    '输出完整BOM
-    'If ImportTSV(SaveAsPath & "_PCBA_BOM.xls", 80) = False Then
-    '    Process 100, "tsv文件错误！请更新tsv文件！"
-    '    GoTo ErrorHandle
-    'End If
-    
-    'If ImportTSV(SaveAsPath & "_领料BOM.xls", 84) = False Then
-    '    Process 100, "tsv文件错误！请更新tsv文件！"
-    '    GoTo ErrorHandle
-    'End If
-    
-    'If ImportTSV(SaveAsPath & "_调试BOM.xls", 88) = False Then
-    '    Process 100, "tsv文件错误！请更新tsv文件！"
-    '    GoTo ErrorHandle
-    'End If
-    
-    'If ImportTSV(SaveAsPath & "_生产BOM.xls", 92) = False Then
-    '    Process 100, "tsv文件错误！请更新tsv文件！"
-    '    GoTo ErrorHandle
-    'End If
-    
-    '打开生成的BOM目录
-    ShellExecute 0, "open", ProjectDir & "\BOM", "", "", 1
-    
-    '清空程序依赖的路径信息，便于下次转换开始
-    ClearPath
-    
-    Process 100, "完成！"
     
      '============================================
     '显示结果信息 元件数量个数
@@ -631,6 +591,14 @@ Public Sub BomStage_Two()
     msgstr = msgstr + "    注意：生成的BOM文件需要检查修改后才可供评审 "
     
     MsgBox msgstr, vbInformation + vbOKOnly + vbMsgBoxSetForeground, "BOM 文件创建成功"
+    
+    '打开生成的BOM目录
+    ShellExecute 0, "open", ProjectDir & "\BOM", "", "", 1
+    
+    '清空程序依赖的路径信息，便于下次转换开始
+    ClearPath
+    
+    Process 100, "完成！"
     
     Exit Sub
 

@@ -132,7 +132,8 @@ Function BomMakePLExcel()
     Exit Function
     
 ErrorHandle:
-
+    
+    xlBook.Close (True) '关闭工作簿
     xlApp.Quit '结束EXCEL对象
     Set xlApp = Nothing '释放xlApp对象
     

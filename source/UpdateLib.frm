@@ -157,7 +157,6 @@ Private Sub UpdateSTD(newlibfile As String)
         Loop
     Next i
     
-    On Error GoTo ErrorHandle
     For i = 2 To UBound(oldLibLine) - 1
         oldAtom = Split(oldLibLine(i), Space(1))
             For j = 2 To UBound(tmpLibLine) - 1
@@ -197,8 +196,6 @@ Private Sub UpdateSTD(newlibfile As String)
         .SortKey = 3 - 1  '按封装类型排序
         .Sorted = True
     End With
-    
-ErrorHandle:
 
 End Sub
 
