@@ -581,8 +581,8 @@ Function CreateBOM(bt_value As BomType) As Boolean
         End If
     End If
     
-    '计算获取Excel的"位号区域"行高，看是否符合要求，不符合需要调整列宽
-    
+    '是否经过BomChecker？
+    '经过模版的Excel文件格式应该是OK的
     
     '结束所有调整和创建 添加
     xlBook.Close (True) '关闭工作簿
@@ -680,4 +680,56 @@ Function ReNum(xlSheet As Excel.Worksheet) As Boolean
     
     ReNum = True
     
+End Function
+
+'检查BOM
+'a.元件数和位号数一致
+'b.Flash增加备注: 需预编程
+'c.编程软件添加备注: SMT用
+'d.工具软件添加备注："测试阶段用"
+'e.调整位号对应的列宽?行高使之全部显示
+Function BomChecker(ExcelBomFilePath As String)
+    On Error GoTo ErrorHandle
+
+    Dim xlApp As Excel.Application
+    Dim xlBook As Excel.Workbook
+    Dim xlSheet As Excel.Worksheet
+
+    Set xlApp = CreateObject("Excel.Application")
+    xlApp.Visible = False
+    
+    '打开文件
+    Set xlBook = xlApp.Workbooks.Open(ExcelBomFilePath)
+    
+    '先检查第第一个WorkSheet
+    Set xlSheet = xlBook.Worksheets(1)
+    '开始BOM检查
+    
+    'a.元件数和位号数一致
+    
+    
+    'b.Flash增加备注: 需预编程
+    'c.编程软件添加备注: SMT用
+    'd.工具软件添加备注："测试阶段用"
+    
+    
+    'e.调整位号对应的列宽?行高使之全部显示
+    
+    
+    
+    '结束所有调整和创建 添加
+    xlBook.Close (True) '关闭工作簿
+
+    xlApp.Quit '结束EXCEL对象
+    Set xlApp = Nothing '释放xlApp对象
+
+    Exit Function
+
+ErrorHandle:
+    
+    xlBook.Close (True) '关闭工作簿
+    xlApp.Quit '结束EXCEL对象
+    Set xlApp = Nothing '释放xlApp对象
+
+    MsgBox "打开Excel格式BOM文件时发生异常！", vbCritical + vbMsgBoxSetForeground + vbOKOnly, "错误"
 End Function

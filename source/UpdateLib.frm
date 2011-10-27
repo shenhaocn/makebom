@@ -238,9 +238,14 @@ End Sub
 
 Private Sub Command2_Click()
     Dim msgstr As String
-
-    msgstr = msgstr + "第1步：选择从Power PCB中导出的STD.lst。" & vbCrLf & vbCrLf
-    msgstr = msgstr + "第2步：在需要修改的封装上使用鼠标点击选择正确的封装类型。" & vbCrLf & vbCrLf
+    
+    msgstr = msgstr + "第1步：从服务器上下载最新的PowerPCB库文件。" & vbCrLf & vbCrLf
+    msgstr = msgstr + "第2步：将下载的库文件放置在PowerPCB的库目录下。" & vbCrLf & vbCrLf
+    msgstr = msgstr + "第3步：从PowerPCB中导出STD.lst文件。" & vbCrLf & vbCrLf
+    msgstr = msgstr + "第4步：在本程序的库文件管理界面点击【更新】按钮。" & vbCrLf & vbCrLf
+    msgstr = msgstr + "第5步：选择刚才从PowerPCB中导出的STD.lst。" & vbCrLf & vbCrLf
+    msgstr = msgstr + "第6步：在需要修改的封装上使用鼠标点击选择正确的封装类型。" & vbCrLf & vbCrLf
+    msgstr = msgstr + "第7步：确认无误后将更新的库文件提交到版本库中，供大家使用。" & vbCrLf & vbCrLf
     
     msgstr = msgstr + "注意：" & vbCrLf & vbCrLf
     msgstr = msgstr + "最终修改后的库文件需提交到版本库中。" & vbCrLf

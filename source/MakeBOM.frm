@@ -3,7 +3,7 @@ Object = "{F9043C88-F6F2-101A-A3C9-08002B2F49FB}#1.2#0"; "COMDLG32.OCX"
 Object = "{831FDD16-0C5C-11D2-A9FC-0000F8754DA1}#2.0#0"; "MSCOMCTL.OCX"
 Begin VB.Form MainForm 
    BorderStyle     =   1  'Fixed Single
-   Caption         =   "BOM生成工具"
+   Caption         =   "MakeBOM(BOM生成工具)"
    ClientHeight    =   4140
    ClientLeft      =   150
    ClientTop       =   780
@@ -180,16 +180,24 @@ Begin VB.Form MainForm
    End
    Begin VB.Menu menu_lib 
       Caption         =   "封装库"
+      NegotiatePosition=   2  'Middle
+   End
+   Begin VB.Menu menu_checker 
+      Caption         =   "BomChecker"
+      NegotiatePosition=   2  'Middle
    End
    Begin VB.Menu menu_feedback 
       Caption         =   "反馈"
+      NegotiatePosition=   2  'Middle
       Visible         =   0   'False
    End
    Begin VB.Menu menu_about 
       Caption         =   "关于"
+      NegotiatePosition=   2  'Middle
    End
    Begin VB.Menu menu_winpos 
       Caption         =   "--"
+      NegotiatePosition=   2  'Middle
    End
 End
 Attribute VB_Name = "MainForm"
@@ -284,18 +292,48 @@ Private Sub Form_Unload(Cancel As Integer)
     
 End Sub
 
+Private Sub menu_lib_Click()
+    '打开库文件
+    'Shell "notepad " & LibFilePath, vbMaximizedFocus
+    frmLib.Show 1
+End Sub
+
+Private Sub menu_checker_Click()
+    Dim GetPath As String
+    ProjectDir = GetSetting(App.EXEName, "ProjectDir", "上次工作目录", "E:\")
+    
+    CommonDialog1.InitDir = ProjectDir
+    CommonDialog1.FileName = ""
+    CommonDialog1.DialogTitle = "请选择Excel格式的BOM文件"
+    CommonDialog1.Filter = "All File(*.*)|*.*|Excel BOM files(*.xls)|*.xls"
+    CommonDialog1.FilterIndex = 2
+    CommonDialog1.ShowOpen
+    
+    GetPath = CommonDialog1.FileName
+    
+    If GetPath = "" Then
+        Exit Sub
+    End If
+    
+    Dim isbom As String
+    isbom = Right(GetPath, Len(GetPath) - InStrRev(GetPath, ".") + 1)
+
+    If isbom <> ".XLS" And isbom <> ".xls" Then
+        MsgBox "必须为.xls文件！", vbMsgBoxSetForeground + vbExclamation + vbOKOnly, "警告"
+        Exit Sub
+    End If
+    
+    '导入BOM检查器
+    BomChecker GetPath
+    
+End Sub
+
 Private Sub menu_about_Click()
     frmAbout.Show 1
 End Sub
 
 Private Sub menu_feedback_Click()
     ShellExecute 0, "open", "mailto:shenhao@tp-link.net?subject=【MakeBOM】反馈&Body=", "", "", 1
-End Sub
-
-Private Sub menu_lib_Click()
-    '打开库文件
-    'Shell "notepad " & LibFilePath, vbMaximizedFocus
-    frmLib.Show 1
 End Sub
 
 Private Sub menu_winpos_Click()
@@ -409,6 +447,12 @@ Private Sub Command_ImportBom_OLEDragDrop(Data As DataObject, Effect As Long, Bu
         
         BomStage_One
     End If
+    
+    If filetype = ".xls" Then
+        '导入BOM检查器
+        BomChecker filePath
+    End If
+    
 End Sub
 
 Private Sub Command_ImportBom_Click()
@@ -466,9 +510,11 @@ Private Sub BomStage_One()
     End If
     
     '创建批量查询文件
+    Process 5, "创建批量查询文件 ..."
     BomMakePLExcel
     
     '填充来自orCAD BOM的数据并且创建新的.bmf文件
+    Process 8, "创建批量查询文件 ..."
     BmfMaker
     
     '默认tsv文件在工作目录下
@@ -525,10 +571,12 @@ Private Sub BomStage_One()
     ImportTSV
     
     '转换BMF文件格式避免出现乱码
+    Process 75, "自动转换BMF文件格式为ANSI ..."
     BmfToAnsi
     
     '查找bmf文件中有料号，但是没有物料描述的行
     '给出提示是否自动联网更新物料描述
+    '本功能确定可以实现 但未完成
     'GetInfoFromERP
     'GetInfoFromERP "RD_ENGINEER", "123456"
     
@@ -613,13 +661,16 @@ End Sub
 
 
 Private Sub BomCreate()
+    
     If CheckPreBom.Value = Checked Then
+        Process 80, "创建预BOM ..."
         ExcelCreate BOM_预
         CreateBOM BOM_预
         
     End If
     
     If CheckNcDbg.Value = Checked Then
+        Process 83, "创建NC_DBG和NONE BOM ..."
         ExcelCreate BOM_NCDBG
         CreateBOM BOM_NCDBG
         
@@ -629,6 +680,7 @@ Private Sub BomCreate()
     End If
     
     If Check_领料.Value = Checked Then
+        Process 85, "创建领料BOM ..."
         'tsv文件是否失效？
         If DateDiff("d", CDate(GetFileWriteTime(tsvFilePath)), Now) > 3 Then
             MsgBox "tsv文件已经过期[" & GetFileWriteTime(tsvFilePath) & "]！" & vbCrLf & vbCrLf & _
@@ -641,12 +693,14 @@ Private Sub BomCreate()
     End If
     
     If Check_调试.Value = Checked Then
+        Process 90, "创建调试BOM ..."
         ExcelCreate BOM_调试
         CreateBOM BOM_调试
         
     End If
     
     If Check_生产.Value = Checked Then
+        Process 95, "创建生产BOM ..."
         ExcelCreate BOM_生产
         CreateBOM BOM_生产
         

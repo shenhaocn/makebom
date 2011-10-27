@@ -62,6 +62,16 @@ Function BuildProjectPath(srcPath As String)
         MkDir ProjectDir & "BOM\"
     End If
     
+    '创建一个说明文档
+    Open ProjectDir & "BOM\" & "说明.txt" For Binary Access Write As #1
+    Seek #1, 1
+    Put #1, , "【注意】：" & vbCrLf & vbCrLf
+    Put #1, , "本目录下自动生成的所有文件极易被程序修改或删除！" & vbCrLf & vbCrLf
+    Put #1, , "请务必将需要的文件重命名保存或另存到可靠的位置！！" & vbCrLf & vbCrLf
+    Put #1, , vbCrLf
+
+    Close #1
+    
     SaveSetting App.EXEName, "ProjectDir", "上次工作目录", ProjectDir
 End Function
 
@@ -127,7 +137,7 @@ Function BomMakePLExcel()
     xlApp.Quit '结束EXCEL对象
     Set xlApp = Nothing '释放xlApp对象
     
-    Process 20, "批量查询文件生成完毕..."
+    Process 7, "批量查询文件生成完毕..."
     
     Exit Function
     
@@ -408,7 +418,7 @@ Function BmfMaker()
     
 
     '读取库信息
-    Process 10, "读取库文件信息..."
+    Process 10, "获取库文件信息..."
     
     Dim leadLibInfo()      As String
     Dim smtLibInfo()       As String
@@ -476,18 +486,6 @@ Function BmfMaker()
     'On Error GoTo ErrorHandle
     For i = 1 To UBound(oldBomLine) - 1
         oldAtom = Split(oldBomLine(i), vbTab)
-        
-         '料号后面存在两个以上换行
-        If UBound(oldAtom) < 5 Then
-            strtmp = oldBomLine(i)
-            For j = i + 1 To UBound(oldBomLine)
-                If Len(oldBomLine(j)) > 1 Then
-                    oldAtom = Split(strtmp & oldBomLine(j), vbTab)
-                    i = j
-                    Exit For
-                End If
-            Next
-        End If
         
         newBomLine(i) = oldAtom(BomItemNumber) + vbTab + oldAtom(BomPartNumber) + vbTab
         newBomLine(i) = newBomLine(i) + oldAtom(BomValue) + vbTab + oldAtom(BomQuantity) + vbTab
@@ -650,7 +648,7 @@ Function ImportTSV() As Boolean
     For i = 1 To UBound(fileinfo) - 1
         bomstr = Split(fileinfo(i), vbTab)
         
-        Process i * 3 / UBound(fileinfo) + 51 + 1, "分析物料  [" & bomstr(1) & "]..."
+        Process i * 20 / UBound(fileinfo) + 51, "分析物料  [" & bomstr(1) & "]..."
         
         '查找并填入相关信息
         FindRow = LookupBmfRow(bomstr(1), BMF_PartNum)
@@ -674,7 +672,7 @@ Function ImportTSV() As Boolean
         
     Next i
     
-    Process 60, "BOM中间文件生成完毕..."
+    Process 72, "BOM中间文件生成完毕..."
  
 End Function
 
