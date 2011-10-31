@@ -40,6 +40,24 @@ End Enum
 'BMF_TP2
 'BMF_TP3ÿ
 
+
+'*************************************************************************
+'**º¯ Êý Ãû£ºxlsInsert
+'**Êä    Èë£ºxlSheet(Excel.Worksheet) -
+'**        £ºItemNum(Integer)         -
+'**        £ºRow(Long)                -
+'**        £ºinsertStr()(String)      -
+'**        £ºOrgEnable(Boolean)       -
+'**Êä    ³ö£ºÎÞ
+'**¹¦ÄÜÃèÊö£ºÔÚ¶ÔÓ¦µÄSheetµÄ¶ÔÓ¦Î»ÖÃÉÏÌí¼ÓÒ»ÐÐ
+'**È«¾Ö±äÁ¿£º
+'**µ÷ÓÃÄ£¿é£º
+'**×÷    Õß£ºShenhao
+'**ÈÕ    ÆÚ£º2011-11-01 00:37:31
+'**ÐÞ ¸Ä ÈË£º
+'**ÈÕ    ÆÚ£º
+'**°æ    ±¾£ºV3.6.7
+'*************************************************************************
 Function xlsInsert(xlSheet As Excel.Worksheet, ItemNum As Integer, Row As Long, insertStr() As String, OrgEnable As Boolean)
     
     'Ê×ÐÐ²»ÐèÒª¼ÓÈë
@@ -195,6 +213,7 @@ Function addDbgNcPart(xlSheet As Excel.Worksheet, bmfAtom() As String, _
     End With
 End Function
 
+'ÐÐ¿½±´
 Function CopyLine(xlSheetTo As Excel.Worksheet, RowTo As Integer, xlSheetFrom As Excel.Worksheet, RowFrom As Integer, ColumnNum As Integer, PartNum As Integer)
     xlSheetTo.Rows(RowTo & ":" & RowTo).Insert
     xlSheetTo.Cells(RowTo, 1) = PartNum
@@ -612,6 +631,7 @@ ErrorHandle:
 
 End Function
 
+'É¾³ý´òÑùÎïÁÏ
 Function DelSamplePart(xlSheet As Excel.Worksheet) As Boolean
     Dim rngStart        As Range
     Dim rngEND          As Range
@@ -656,6 +676,7 @@ Function DelSamplePart(xlSheet As Excel.Worksheet) As Boolean
     
 End Function
 
+'ÖØÐÂ±àºÅ
 Function ReNum(xlSheet As Excel.Worksheet) As Boolean
     'ÖØÐÂ±àºÅ
     Dim rngSMT          As Range

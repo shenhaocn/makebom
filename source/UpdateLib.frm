@@ -369,7 +369,11 @@ On Error Resume Next
             Case "N": menuTypeSub(MENU_N).Checked = True
         End Select
         
-        PopupMenu menuMountTpye, vbPopupMenuRightAlign, ListView1.SelectedItem.Left, Y
+        If Button = vbLeftButton Then
+            PopupMenu menuMountTpye, vbPopupMenuRightAlign, ListView1.SelectedItem.Left, Y
+        Else
+            PopupMenu menuMountTpye
+        End If
     End If
     
     If Button = vbLeftButton Then

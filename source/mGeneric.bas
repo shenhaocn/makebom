@@ -260,7 +260,6 @@ Public Function WriteTxt(strSourceFile As String, intRow As Long, StrLineNew As 
         StrOut = StrLineNew
     End If
     
-    '多了一个换行符？
     Open strSourceFile For Output As #1
     Print #1, StrOut
     Close #1
@@ -304,6 +303,7 @@ Function Process(ProcessNum As Integer, ProcessMsg As String)
     MainForm.StatusBar1.Panels(2) = ProcessNum & "%"
 End Function
 
+'删除旧的Excel格式文件
 Function KillExcel(ExcelFilePath As String)
 On Error GoTo ErrorHandle
     If Dir(ExcelFilePath) <> "" Then
@@ -318,6 +318,21 @@ ErrorHandle:
     End
 End Function
 
+
+'*************************************************************************
+'**函 数 名：AutoLoginERP
+'**输    入：uid(String) -
+'**        ：pwd(String) -
+'**输    出：无
+'**功能描述：自动登录ERP系统 为批量查询做准备
+'**全局变量：
+'**调用模块：
+'**作    者：Shenhao
+'**日    期：2011-11-01 00:44:04
+'**修 改 人：
+'**日    期：
+'**版    本：V3.6.7
+'*************************************************************************
 Function AutoLoginERP(uid As String, pwd As String)
     Dim i As Integer
     Dim j As Integer
@@ -384,6 +399,21 @@ Function AutoLoginERP(uid As String, pwd As String)
     
 End Function
 
+
+'*************************************************************************
+'**函 数 名：GetInfoFromERP
+'**输    入：uid(String) -
+'**        ：pwd(String) -
+'**输    出：无
+'**功能描述：在ERP系统中获取信息，本Function未完成
+'**全局变量：
+'**调用模块：
+'**作    者：Shenhao
+'**日    期：2011-11-01 00:44:33
+'**修 改 人：
+'**日    期：
+'**版    本：V3.6.7
+'*************************************************************************
 Function GetInfoFromERP(uid As String, pwd As String)
     Dim i As Integer
     Dim j As Integer

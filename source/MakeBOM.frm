@@ -220,6 +220,7 @@ Attribute VB_Exposed = False
 
 Option Explicit
 
+'ÔØÈë³ÌĞòÅäÖÃ
 Private Sub Form_Load()
     
     '³õÊ¼»¯Êı¾İ¿â
@@ -294,6 +295,7 @@ Private Sub Form_Unload(Cancel As Integer)
     
 End Sub
 
+'²Ëµ¥
 Private Sub menu_lib_Click()
     '´ò¿ª¿âÎÄ¼ş
     frmLib.Show 1
@@ -316,16 +318,18 @@ Private Sub menu_checker_Click()
         Exit Sub
     End If
     
-    Dim isbom As String
-    isbom = Right(GetPath, Len(GetPath) - InStrRev(GetPath, ".") + 1)
+    Dim filetype As String
+    filetype = Right(GetPath, Len(GetPath) - InStrRev(GetPath, ".") + 1)
 
-    If isbom <> ".XLS" And isbom <> ".xls" Then
-        MsgBox "±ØĞëÎª.xlsÎÄ¼ş£¡", vbMsgBoxSetForeground + vbExclamation + vbOKOnly, "¾¯¸æ"
-        Exit Sub
-    End If
-    
-    'µ¼ÈëBOM¼ì²éÆ÷
-    BomChecker GetPath
+    Select Case LCase(filetype)
+    Case ".xls":
+        'µ¼ÈëBOM¼ì²éÆ÷
+        BomChecker GetPath
+        
+    Case Else
+        MsgBox "ÎÄ¼şÀàĞÍ´íÎó£¡", vbMsgBoxSetForeground + vbExclamation + vbOKOnly, "¾¯¸æ"
+        ClearPath
+    End Select
     
 End Sub
 
@@ -352,7 +356,7 @@ Private Sub menu_winpos_Click()
 End Sub
 
 
-
+'¿â´æÉèÖÃ
 Private Sub Combo1_Click()
     SaveSetting App.EXEName, "SelectStorage", "¿â´æÀàĞÍ", Combo1.Text
 End Sub
@@ -373,6 +377,7 @@ Private Sub Combo1_LostFocus()
     SaveSetting App.EXEName, "SelectStorage", "¿â´æÀàĞÍ", Combo1.Text
 End Sub
 
+'Ñ¡ÔñĞèÒªÉú³ÉµÄBOMÎÄ¼ş
 Private Sub CheckAll_Click()
 
     If CheckAll.Value = Checked Then
@@ -418,6 +423,7 @@ Private Sub CheckPreBom_Click()
     CheckCheck
 End Sub
 
+'ÔÊĞíÍÏ·Å²Ù×÷
 Private Sub Command_ImportBom_OLEDragDrop(Data As DataObject, Effect As Long, Button As Integer, Shift As Integer, X As Single, Y As Single)
     'ÔÊĞíÍÏ·Å²Ù×÷
     Dim PLResultFile As Variant
@@ -428,17 +434,19 @@ Private Sub Command_ImportBom_OLEDragDrop(Data As DataObject, Effect As Long, Bu
         filePath = PLResultFile
     Next
     
-    Dim filetype As String
-    filetype = Right(filePath, Len(filePath) - InStrRev(filePath, ".") + 1)
-    
-    If filetype = ".BOM" Or filetype = ".bom" Then
-        BuildProjectPath filePath
-        
-        BomStage_One
+    If filePath = "" Then
         Exit Sub
     End If
     
-    If filetype = ".tsv" Then
+    Dim filetype As String
+    filetype = Right(filePath, Len(filePath) - InStrRev(filePath, ".") + 1)
+    
+    Select Case LCase(filetype)
+    Case ".bom":
+        BuildProjectPath filePath
+        BomStage_One
+        
+    Case ".tsv":
         tsvFilePath = filePath
         
         If BomFilePath = "" Then
@@ -447,15 +455,19 @@ Private Sub Command_ImportBom_OLEDragDrop(Data As DataObject, Effect As Long, Bu
         End If
         
         BomStage_One
-    End If
-    
-    If filetype = ".xls" Then
+        
+    Case ".xls":
         'µ¼ÈëBOM¼ì²éÆ÷
         BomChecker filePath
-    End If
+        
+    Case Else
+        MsgBox "ÎÄ¼şÀàĞÍ´íÎó£¡", vbMsgBoxSetForeground + vbExclamation + vbOKOnly, "¾¯¸æ"
+        ClearPath
+    End Select
     
 End Sub
 
+'Ö÷¿ØÖÆ°´Å¥ÃüÁî
 Private Sub Command_ImportBom_Click()
     Dim GetPath As String
     ProjectDir = GetSetting(App.EXEName, "ProjectDir", "ÉÏ´Î¹¤×÷Ä¿Â¼", "E:\")
@@ -463,7 +475,7 @@ Private Sub Command_ImportBom_Click()
     CommonDialog1.InitDir = ProjectDir
     CommonDialog1.FileName = ""
     CommonDialog1.DialogTitle = "ÇëÑ¡Ôñ.BOMÎÄ¼ş"
-    CommonDialog1.Filter = "All File(*.*)|*.*|BOM files(*.BOM)|*.BOM"
+    CommonDialog1.Filter = "All File(*.*)|*.*|BOM ÎÄ¼ş(*.BOM; *.xls)|*.BOM;*.xls"
     CommonDialog1.FilterIndex = 2
     CommonDialog1.ShowOpen
     
@@ -473,18 +485,32 @@ Private Sub Command_ImportBom_Click()
         Exit Sub
     End If
     
-    Dim isbom As String
-    isbom = Right(GetPath, Len(GetPath) - InStrRev(GetPath, ".") + 1)
+    Dim filetype As String
+    filetype = Right(GetPath, Len(GetPath) - InStrRev(GetPath, ".") + 1)
 
-    If isbom <> ".BOM" And isbom <> ".bom" Then
-        MsgBox "±ØĞëÎª.BOMÎÄ¼ş£¡", vbMsgBoxSetForeground + vbExclamation + vbOKOnly, "¾¯¸æ"
+    Select Case LCase(filetype)
+    Case ".bom":
+        BuildProjectPath GetPath
+        BomStage_One
+        
+    Case ".tsv":
+        tsvFilePath = GetPath
+        
+        If BomFilePath = "" Then
+            MsgBox "ÇëÏÈÑ¡Ôñ.BOMÎÄ¼şËùÔÚÂ·¾¶£¡", vbInformation + vbMsgBoxSetForeground + vbOKOnly, "ÌáÊ¾"
+            Exit Sub
+        End If
+        
+        BomStage_One
+        
+    Case ".xls":
+        'µ¼ÈëBOM¼ì²éÆ÷
+        BomChecker GetPath
+        
+    Case Else
+        MsgBox "ÎÄ¼şÀàĞÍ´íÎó£¡", vbMsgBoxSetForeground + vbExclamation + vbOKOnly, "¾¯¸æ"
         ClearPath
-        Exit Sub
-    End If
-    
-    BuildProjectPath GetPath
-
-    BomStage_One
+    End Select
     
 End Sub
 
@@ -606,16 +632,16 @@ End Sub
 '**Êä    Èë£ºÎŞ
 '**Êä    ³ö£ºÎŞ
 '**¹¦ÄÜÃèÊö£º¸ù¾İCheckBoxµÄ×´Ì¬´´½¨ExcelÎÄ¼şºÍÉú³ÉÏàÓ¦µÄBOM
-'            Á÷³ÌÈçÏÂ:
-'            1.¸ù¾İÄ£°æ´´½¨Excel BOM
-'            2.¸ù¾İĞèÒªµ÷ÕûExcel ¸ñÊ½
-'            3.¶ÁÈ¡bmf(BOM Maker File)ÎÄ¼ş ½«ĞÅÏ¢ÌîÈëExcel
-'            4.¸ù¾İĞÅÏ¢µ÷ÕûExcel¸ñÊ½
-'            5.É¨ÃèExcel¸ñÊ½ ĞŞÕı²¿·Ö¸ñÊ½
-'            6.Íê³É
-'            ×¢Òâ£ºÁìÁÏBOMÖĞµÄ¿â´æĞÅÏ¢±ØĞë±£Ö¤ÊÇ×îĞÂµÄ¡£
-'                  Òò´Ë³ÌĞò»á¼ì²étsvÎÄ¼şµÄ²úÉúÊ±¼ä
-'                  Ê±¼ä²»ÔÚÈıÌìÄÚ»áÌáÊ¾£¬ÖØĞÂ²éÑ¯ÿ
+'          £ºÁ÷³ÌÈçÏÂ:
+'          £º1.¸ù¾İÄ£°æ´´½¨Excel BOM
+'          £º2.¸ù¾İĞèÒªµ÷ÕûExcel ¸ñÊ½
+'          £º3.¶ÁÈ¡bmf(BOM Maker File)ÎÄ¼ş ½«ĞÅÏ¢ÌîÈëExcel
+'          £º4.¸ù¾İĞÅÏ¢µ÷ÕûExcel¸ñÊ½
+'          £º5.É¨ÃèExcel¸ñÊ½ ĞŞÕı²¿·Ö¸ñÊ½
+'          £º6.Íê³É
+'          £º×¢Òâ£ºÁìÁÏBOMÖĞµÄ¿â´æĞÅÏ¢±ØĞë±£Ö¤ÊÇ×îĞÂµÄ¡£
+'          £º      Òò´Ë³ÌĞò»á¼ì²étsvÎÄ¼şµÄ²úÉúÊ±¼ä
+'          £º      Ê±¼ä²»ÔÚÈıÌìÄÚ»áÌáÊ¾£¬ÖØĞÂ²éÑ¯ÿ
 '**È«¾Ö±äÁ¿£º
 '**µ÷ÓÃÄ£¿é£º
 '**×÷    Õß£ºShenhao
