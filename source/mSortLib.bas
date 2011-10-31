@@ -1,4 +1,14 @@
 Attribute VB_Name = "mSortLib"
+'*************************************************************************************
+'**模 块 名：mSortLib
+'**说    明：TP-LINK SMB Switch Product Line Hardware Group 版权所有2011 - 2012(C)
+'**创 建 人：Shenhao
+'**日    期：2011-10-31 23:38:03
+'**修 改 人：
+'**日    期：
+'**描    述：
+'**版    本：V3.6.3
+'*************************************************************************************
 Option Explicit
 
 '分类库
@@ -10,6 +20,20 @@ End Enum
 
 Public LibFilePath     As String  '库文件路径信息
 
+
+'*************************************************************************
+'**函 数 名：InitLib
+'**输    入：filePath(String) -
+'**输    出：(Boolean) -
+'**功能描述：初始化封装库
+'**全局变量：
+'**调用模块：
+'**作    者：Shenhao
+'**日    期：2011-10-31 23:41:31
+'**修 改 人：
+'**日    期：
+'**版    本：V3.6.3
+'*************************************************************************
 Function InitLib(filePath As String) As Boolean
     '是否存在库文件
     If Dir(filePath) = "" Then
@@ -37,6 +61,20 @@ Function InitLib(filePath As String) As Boolean
     InitLib = True
 End Function
 
+
+'*************************************************************************
+'**函 数 名：OpenLibs
+'**输    入：无
+'**输    出：字符串数组是以一个空格分割各个属性的字符串 以各行内容为数组
+'**功能描述：
+'**全局变量：
+'**调用模块：
+'**作    者：Shenhao
+'**日    期：2011-10-31 23:42:02
+'**修 改 人：
+'**日    期：
+'**版    本：V3.6.3
+'*************************************************************************
 Function OpenLibs() As String()
     Dim FileContents    As String
     Dim fileinfo()      As String
@@ -56,6 +94,20 @@ Function OpenLibs() As String()
         
 End Function
 
+
+'*************************************************************************
+'**函 数 名：GetLibsVersion
+'**输    入：无
+'**输    出：(String) -
+'**功能描述：获取封装库版本号
+'**全局变量：
+'**调用模块：
+'**作    者：Shenhao
+'**日    期：2011-10-31 23:42:48
+'**修 改 人：
+'**日    期：
+'**版    本：V3.6.3
+'*************************************************************************
 Function GetLibsVersion() As String
     Dim FileContents    As String
     Dim fileinfo()      As String
@@ -70,6 +122,20 @@ Function GetLibsVersion() As String
         
 End Function
 
+
+'*************************************************************************
+'**函 数 名：ReadLibs
+'**输    入：Lib(MountType) As String() -
+'**输    出：无
+'**功能描述：读取指定的封装库
+'**全局变量：
+'**调用模块：
+'**作    者：Shenhao
+'**日    期：2011-10-31 23:43:14
+'**修 改 人：
+'**日    期：
+'**版    本：V3.6.3
+'*************************************************************************
 Function ReadLibs(Lib As MountType) As String()
     Dim LibsInfo()      As String
     Dim Libstr()        As String
@@ -157,6 +223,21 @@ Function ReadLibs(Lib As MountType) As String()
         
 End Function
 
+
+'*************************************************************************
+'**函 数 名：QueryLib
+'**输    入：LibInfo()(String) -
+'**        ：QueryStr(String)  -
+'**输    出：(Integer) -
+'**功能描述：查询封装库
+'**全局变量：
+'**调用模块：
+'**作    者：Shenhao
+'**日    期：2011-10-31 23:43:41
+'**修 改 人：
+'**日    期：
+'**版    本：V3.6.3
+'*************************************************************************
 Function QueryLib(LibInfo() As String, QueryStr As String) As Integer
     Dim i As Integer
     QueryLib = 0

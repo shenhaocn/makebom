@@ -106,6 +106,16 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+'***************************************************************************************
+'**模 块 名：frmAbout
+'**说    明：TP-LINK SMB Switch Product Line Hardware Group 版权所有2011 - 2012(C)
+'**创 建 人：Shenhao
+'**日    期：2011-10-31 23:47:39
+'**修 改 人：
+'**日    期：
+'**描    述：关于
+'**版    本：V3.6.3
+'***************************************************************************************
 Option Explicit
 
 ' 注册表关键字安全选项...
@@ -149,7 +159,7 @@ Private Sub Form_Load()
     SetWindowsPos_TopMost Me.hwnd
     
     Me.Caption = "关于 " & App.Title
-    lblVersion.Caption = "主程序版本 " & App.Major & "." & App.Minor & "." & App.Revision & vbCrLf & "库文件版本 " & GetLibsVersion
+    lblVersion.Caption = "主程序版本： " & App.Major & "." & App.Minor & "." & App.Revision & vbCrLf & "库文件版本： " & GetLibsVersion
     lblTitle.Caption = App.Title
     lblDescription.Caption = "BOM直接生成工具" & vbCrLf & vbCrLf & _
                              "by SMB Product Line Hardware Group" & vbCrLf & vbCrLf & _

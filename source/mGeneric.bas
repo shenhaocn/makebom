@@ -1,4 +1,14 @@
 Attribute VB_Name = "mGeneric"
+'*************************************************************************************
+'**模 块 名：mGeneric
+'**说    明：TP-LINK SMB Switch Product Line Hardware Group 版权所有2011 - 2012(C)
+'**创 建 人：Shenhao
+'**日    期：2011-10-31 23:36:58
+'**修 改 人：
+'**日    期：
+'**描    述：通用模块库
+'**版    本：V3.6.3
+'*************************************************************************************
 Option Explicit
 
 '==============================================================================
@@ -98,7 +108,7 @@ Private hFile As Long
 Function GetFileCreateTime(filePath As String) As String
 
     Dim FileHandle As Long
-    Dim FileInfo As BY_HANDLE_FILE_INFORMATION
+    Dim fileinfo As BY_HANDLE_FILE_INFORMATION
     Dim lpReOpenBuff As OFSTRUCT, ft As SYSTEMTIME
     Dim tZone As TIME_ZONE_INFORMATION
     
@@ -108,12 +118,12 @@ Function GetFileCreateTime(filePath As String) As String
     ' 先取得文件的Handle。
     FileHandle = OpenFile(filePath, lpReOpenBuff, OF_READ)
     ' 利用文件的Handle读取文件信息。
-    Call GetFileInformationByHandle(FileHandle, FileInfo)
+    Call GetFileInformationByHandle(FileHandle, fileinfo)
     Call CloseHandle(FileHandle)
     ' 读取时间信息， 因为上一步骤的文件时间是格林威治时间。
     Call GetTimeZoneInformation(tZone)
     bias = tZone.bias ' 时间差， 以分为单位。
-    Call FileTimeToSystemTime(FileInfo.ftCreationTime, ft) ' 转换时间结构。
+    Call FileTimeToSystemTime(fileinfo.ftCreationTime, ft) ' 转换时间结构。
     dtCreate = DateSerial(ft.wYear, ft.wMonth, ft.wDay) + TimeSerial(ft.wHour, ft.wMinute - bias, ft.wSecond)
     
     GetFileCreateTime = CStr(dtCreate)
@@ -124,7 +134,7 @@ End Function
 Function GetFileWriteTime(filePath As String) As String
 
     Dim FileHandle As Long
-    Dim FileInfo As BY_HANDLE_FILE_INFORMATION
+    Dim fileinfo As BY_HANDLE_FILE_INFORMATION
     Dim lpReOpenBuff As OFSTRUCT, ft As SYSTEMTIME
     Dim tZone As TIME_ZONE_INFORMATION
     
@@ -133,13 +143,13 @@ Function GetFileWriteTime(filePath As String) As String
     ' 先取得文件的Handle。
     FileHandle = OpenFile(filePath, lpReOpenBuff, OF_READ)
     ' 利用文件的Handle读取文件信息。
-    Call GetFileInformationByHandle(FileHandle, FileInfo)
+    Call GetFileInformationByHandle(FileHandle, fileinfo)
     Call CloseHandle(FileHandle)
     ' 读取时间信息， 因为上一步骤的文件时间是格林威治时间。
     Call GetTimeZoneInformation(tZone)
     bias = tZone.bias ' 时间差， 以分为单位。
     
-    Call FileTimeToSystemTime(FileInfo.ftLastWriteTime, ft)
+    Call FileTimeToSystemTime(fileinfo.ftLastWriteTime, ft)
     dtWrite = DateSerial(ft.wYear, ft.wMonth, ft.wDay) + TimeSerial(ft.wHour, ft.wMinute - bias, ft.wSecond)
 
     GetFileWriteTime = CStr(dtWrite)
@@ -150,7 +160,7 @@ End Function
 Function GetFileAccessTime(filePath As String) As String
 
     Dim FileHandle As Long
-    Dim FileInfo As BY_HANDLE_FILE_INFORMATION
+    Dim fileinfo As BY_HANDLE_FILE_INFORMATION
     Dim lpReOpenBuff As OFSTRUCT, ft As SYSTEMTIME
     Dim tZone As TIME_ZONE_INFORMATION
     
@@ -159,13 +169,13 @@ Function GetFileAccessTime(filePath As String) As String
     ' 先取得文件的Handle。
     FileHandle = OpenFile(filePath, lpReOpenBuff, OF_READ)
     ' 利用文件的Handle读取文件信息。
-    Call GetFileInformationByHandle(FileHandle, FileInfo)
+    Call GetFileInformationByHandle(FileHandle, fileinfo)
     Call CloseHandle(FileHandle)
     ' 读取时间信息， 因为上一步骤的文件时间是格林威治时间。
     Call GetTimeZoneInformation(tZone)
     bias = tZone.bias ' 时间差， 以分为单位。
     
-    Call FileTimeToSystemTime(FileInfo.ftLastAccessTime, ft)
+    Call FileTimeToSystemTime(fileinfo.ftLastAccessTime, ft)
     dtAccess = DateSerial(ft.wYear, ft.wMonth, ft.wDay) + TimeSerial(ft.wHour, ft.wMinute - bias, ft.wSecond)
 
     GetFileAccessTime = CStr(dtAccess)

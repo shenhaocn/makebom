@@ -103,6 +103,16 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+'*************************************************************************************
+'**模 块 名：frmLib
+'**说    明：TP-LINK SMB Switch Product Line Hardware Group 版权所有2011 - 2012(C)
+'**创 建 人：Shenhao
+'**日    期：2011-10-31 23:46:22
+'**修 改 人：
+'**日    期：
+'**描    述：封装库管理界面
+'**版    本：V3.6.3
+'*************************************************************************************
 Option Explicit
 Private Declare Function LockWindowUpdate Lib "User32" (ByVal hWndLock As Long) As Long
 Private Declare Function GetTickCount Lib "kernel32" () As Long

@@ -4,7 +4,7 @@ Object = "{831FDD16-0C5C-11D2-A9FC-0000F8754DA1}#2.0#0"; "MSCOMCTL.OCX"
 Begin VB.Form MainForm 
    BorderStyle     =   1  'Fixed Single
    Caption         =   "MakeBOM(BOM生成工具)"
-   ClientHeight    =   4140
+   ClientHeight    =   4170
    ClientLeft      =   150
    ClientTop       =   780
    ClientWidth     =   4545
@@ -21,7 +21,7 @@ Begin VB.Form MainForm
    LinkTopic       =   "Form1"
    MaxButton       =   0   'False
    OLEDropMode     =   1  'Manual
-   ScaleHeight     =   4140
+   ScaleHeight     =   4170
    ScaleWidth      =   4545
    StartUpPosition =   3  '窗口缺省
    Begin VB.Frame Frame1 
@@ -134,7 +134,7 @@ Begin VB.Form MainForm
       Height          =   315
       Left            =   0
       TabIndex        =   1
-      Top             =   3825
+      Top             =   3855
       Width           =   4545
       _ExtentX        =   8017
       _ExtentY        =   556
@@ -171,7 +171,7 @@ Begin VB.Form MainForm
          Italic          =   0   'False
          Strikethrough   =   0   'False
       EndProperty
-      Height          =   1335
+      Height          =   1455
       Left            =   180
       OLEDropMode     =   1  'Manual
       TabIndex        =   0
@@ -258,6 +258,8 @@ Private Sub Form_Load()
         SetWindowsPos_NoTopMost Me.hwnd
     End If
     
+    Command_ImportBom.Caption = "生成BOM" & vbCrLf & vbCrLf & "（BomChecker）"
+    
 End Sub
 
 Private Sub Form_OLEDragDrop(Data As DataObject, Effect As Long, Button As Integer, Shift As Integer, X As Single, Y As Single)
@@ -294,7 +296,6 @@ End Sub
 
 Private Sub menu_lib_Click()
     '打开库文件
-    'Shell "notepad " & LibFilePath, vbMaximizedFocus
     frmLib.Show 1
 End Sub
 
@@ -487,8 +488,22 @@ Private Sub Command_ImportBom_Click()
     
 End Sub
 
+
+'*************************************************************************
+'**函 数 名：BomStage_One
+'**输    入：无
+'**输    出：无
+'**功能描述：生成BOM Maker File阶段
+'**全局变量：
+'**调用模块：
+'**作    者：Shenhao
+'**日    期：2011-10-31 23:48:40
+'**修 改 人：
+'**日    期：
+'**版    本：V3.6.3
+'*************************************************************************
 Private Sub BomStage_One()
-    
+
     '==============================================
     '本阶段将会生成BOM Maker File
     '1.导入tsv文件信息到bmf文件中
@@ -496,9 +511,9 @@ Private Sub BomStage_One()
     '3.将所需信息整理为标准格式 便于后一阶段读取
     '4.使用文本格式便于版本控制
     '==============================================
-    
+
     Dim GetPath As String
-    
+
     KillBom
 
     Process 2, "读取.BOM文件信息 ..."
@@ -508,81 +523,81 @@ Private Sub BomStage_One()
         ClearPath
         Exit Sub
     End If
-    
+
     '创建批量查询文件
     Process 5, "创建批量查询文件 ..."
     BomMakePLExcel
-    
+
     '填充来自orCAD BOM的数据并且创建新的.bmf文件
     Process 8, "创建批量查询文件 ..."
     BmfMaker
-    
+
     '默认tsv文件在工作目录下
     tsvFilePath = ProjectDir + "fnd_gfm.tsv"
-    
+
     '查看.BOM目录下是否有tsv文件，有的话直接导入 没有就询问是否进入ERP查询
     If Dir(tsvFilePath) = "" Then
-    
+
         Dim resultL As VbMsgBoxResult
         resultL = MsgBox("在工作目录下未找到合法的批量查询结果文件！" & vbCrLf & vbCrLf & vbCrLf & _
                   "是否打开ERP系统进行批量查询？" & vbCrLf & vbCrLf & _
                   "是-登录ERP系统开始查询" & vbCrLf & vbCrLf & _
                   "否-选择TSV文件路径" & vbCrLf, _
                   vbQuestion + vbMsgBoxSetForeground + vbYesNoCancel)
-                  
+
         If resultL = vbYes Then
-                  
+
             AutoLoginERP "RD_ENGINEER", "123456"
             'FindERP
             Exit Sub
-            
+
         ElseIf resultL = vbNo Then
-        
+
             CommonDialog1.FileName = ""
             CommonDialog1.DialogTitle = "请选择.tsv文件"
             CommonDialog1.Filter = "All File(*.*)|*.*|tsv files(*.tsv)|*.tsv"
             CommonDialog1.FilterIndex = 2
             CommonDialog1.ShowOpen
-            
+
             GetPath = CommonDialog1.FileName
-            
+
             If GetPath = "" Then
                 Exit Sub
             End If
-            
+
             Dim istsv As String
-            istsv = Right(GetPath, Len(GetPath) - InStrRev(GetPath, ".") + 1)
-            
+            istsv = Right$(GetPath, Len(GetPath) - InStrRev(GetPath, ".") + 1)
+
             If istsv <> ".tsv" Then
                 MsgBox "必须为.tsv文件！", vbExclamation + vbMsgBoxSetForeground + vbOKOnly, "警告"
                 Exit Sub
             Else
                 tsvFilePath = GetPath
             End If
-            
+
         ElseIf resultL = vbCancel Then
             Exit Sub
         Else
             Exit Sub
         End If
     End If
-    
+
     '导入tsv文件内信息
     ImportTSV
-    
+
     '转换BMF文件格式避免出现乱码
     Process 75, "自动转换BMF文件格式为ANSI ..."
     BmfToAnsi
-    
+
     '查找bmf文件中有料号，但是没有物料描述的行
     '给出提示是否自动联网更新物料描述
     '本功能确定可以实现 但未完成
     'GetInfoFromERP
     'GetInfoFromERP "RD_ENGINEER", "123456"
-    
+
     '直接进入第2阶段 生成Excel格式BOM阶段
     BomStage_Two
-    
+
 End Sub
 
 
@@ -719,4 +734,3 @@ Private Sub KillBom()
     KillExcel SaveAsPath & "_调试BOM.xls"
     
 End Sub
-

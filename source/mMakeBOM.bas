@@ -1,4 +1,14 @@
 Attribute VB_Name = "mMakeBOM"
+'*************************************************************************************
+'**模 块 名：mMakeBOM
+'**说    明：TP-LINK SMB Switch Product Line Hardware Group 版权所有2011 - 2012(C)
+'**创 建 人：Shenhao
+'**日    期：2011-10-31 23:37:45
+'**修 改 人：
+'**日    期：
+'**描    述：Excel格式BOM生成
+'**版    本：V3.6.3
+'*************************************************************************************
 Option Explicit
 
 'BOM类型
@@ -683,48 +693,156 @@ Function ReNum(xlSheet As Excel.Worksheet) As Boolean
 End Function
 
 '检查BOM
-'a.元件数和位号数一致
-'b.Flash增加备注: 需预编程
-'c.编程软件添加备注: SMT用
-'d.工具软件添加备注："测试阶段用"
-'e.调整位号对应的列宽?行高使之全部显示
+'a.调整位号对应的列宽?行高使之全部显示
+'b.元件数和位号数一致
+'c.添加备注系列
+'c.1.Flash增加备注: 需预编程
+'c.2.烧录软件添加备注: SMT用
+'c.3.工具软件添加备注："测试阶段用"
 Function BomChecker(ExcelBomFilePath As String)
     On Error GoTo ErrorHandle
 
     Dim xlApp As Excel.Application
     Dim xlBook As Excel.Workbook
     Dim xlSheet As Excel.Worksheet
+    
+    '定位元素位置 定位列的位置
+    Dim rngNum    As Range '在BOM文件中表示"序号"的位置
+    Dim rngDcp    As Range '在BOM文件中表示"规格型号"的位置
+    Dim rngNote   As Range '在BOM文件中表示"辅助说明"的位置
+    Dim rngQty    As Range '在BOM文件中表示"数量"的位置
+    Dim rngRef    As Range '在BOM文件中表示"位号"的位置
+    
+    Dim usedRow   As Integer  '总行数
+    Dim usedCol   As Integer  '总列数
+    
+    Dim BomAtom() As String
 
     Set xlApp = CreateObject("Excel.Application")
     xlApp.Visible = False
     
+    Process 10, "打开文件...."
+    
     '打开文件
     Set xlBook = xlApp.Workbooks.Open(ExcelBomFilePath)
-    
     '先检查第第一个WorkSheet
     Set xlSheet = xlBook.Worksheets(1)
-    '开始BOM检查
     
-    'a.元件数和位号数一致
+    Process 15, "验证文件...."
+    With xlSheet.Cells
+
+        Set rngNum = .Find("序号", lookin:=xlValues)
+        Set rngDcp = .Find("规格型号", lookin:=xlValues)
+        Set rngNote = .Find("辅助说明", lookin:=xlValues)
+        Set rngQty = .Find("数量", lookin:=xlValues)
+        Set rngRef = .Find("位号", lookin:=xlValues)
+        
+    End With
     
+    If rngNum Is Nothing Or rngNote Is Nothing Or rngQty Is Nothing Or rngRef Is Nothing Then
+        '检查第第二个WorkSheet
+        Set xlSheet = xlBook.Worksheets(2)
+        With xlSheet.Cells
     
-    'b.Flash增加备注: 需预编程
-    'c.编程软件添加备注: SMT用
-    'd.工具软件添加备注："测试阶段用"
+            Set rngNum = .Find("序号", lookin:=xlValues)
+            Set rngDcp = .Find("规格型号", lookin:=xlValues)
+            Set rngNote = .Find("辅助说明", lookin:=xlValues)
+            Set rngQty = .Find("数量", lookin:=xlValues)
+            Set rngRef = .Find("位号", lookin:=xlValues)
+        End With
+        
+        If rngNum Is Nothing Or rngNote Is Nothing Or rngQty Is Nothing Or rngRef Is Nothing Then
+                '仅支持前两个Sheet 其他的不支持
+                MsgBox "BOM元素位置定位错误", vbCritical + vbMsgBoxSetForeground + vbOKOnly, "错误"
+                GoTo ErrorHandle
+            End If
+    End If
     
+    Process 20, "定位元素位置...."
     
-    'e.调整位号对应的列宽?行高使之全部显示
+    usedRow = xlSheet.UsedRange.Rows.Count
+    usedCol = xlSheet.UsedRange.Columns.Count
+    '===============================================================================================
+    '开始Check
+    '===============================================================================================
+    Dim j As Integer
+    For j = rngNum.Row + 1 To usedRow
     
-    
-    
+    'a.调整位号对应的列宽?行高使之全部显示
+        Process j * 70 / (usedRow - rngNum.Row) + 20, "调整" & "[" & j & "]" & "行位号..."
+        With xlSheet.Cells(j, rngRef.Column)
+            .WrapText = True   '自动换行
+            .Rows.AutoFit      '自适应行高
+        End With
+        '自此大多数显示应该都正确了
+        If xlSheet.Cells(j, rngRef.Column).Height > 408 Then
+            '无法再增加行高了  自适应列宽
+            xlSheet.Cells(j, rngRef.Column).Columns.AutoFit
+        End If
+        
+        
+        Process j * 70 / (usedRow - rngNum.Row) + 20, "排序" & "[" & j & "]" & "行位号..."
+        '调整位号排序
+        If xlSheet.Cells(j, rngRef.Column) <> "" Then
+            xlSheet.Cells(j, rngRef.Column) = RealSorted(xlSheet.Cells(j, rngRef.Column), False)
+        End If
+        
+        
+    'b.元件数和位号数一致
+        Process j * 70 / (usedRow - rngNum.Row) + 20, "检查" & "[" & j & "]" & "行元件数..."
+        If xlSheet.Cells(j, rngQty.Column) <> "" And xlSheet.Cells(j, rngRef.Column) <> "" Then
+           If InStr(xlSheet.Cells(j, rngRef.Column), "优先级") = 0 Then
+               BomAtom = Split(xlSheet.Cells(j, rngRef.Column), Space(1))
+               If CInt(xlSheet.Cells(j, rngQty.Column)) <> (UBound(BomAtom) + 1) Then
+                  '不相等颜色标记
+                  xlSheet.Cells(j, rngQty.Column).Interior.Color = 255 '以强调的颜色显示
+                  xlSheet.Cells(j, rngRef.Column).Interior.Color = 255 '以强调的颜色显示
+                  xlSheet.Cells(j, rngNote.Column) = xlSheet.Cells(j, rngNote.Column) + "元件数位号数不相等！"
+                  xlSheet.Cells(j, rngNote.Column).Interior.Color = 255 '以强调的颜色显示
+                  xlSheet.Cells(j, rngNote.Column).Font.Size = 10
+               End If
+           End If
+        End If
+        
+        
+    'c.添加备注系列
+        Process j * 70 / (usedRow - rngNum.Row) + 20, "检查" & "[" & j & "]" & "行辅助说明..."
+        'c.1.Flash增加备注: 需预编程
+        If InStr(xlSheet.Cells(j, rngDcp.Column), "FLASH") > 0 And _
+           InStr(xlSheet.Cells(j, rngNote.Column), "预编程") = 0 Then
+            xlSheet.Cells(j, rngNote.Column) = xlSheet.Cells(j, rngNote.Column) + "需预编程"
+            xlSheet.Cells(j, rngNote.Column).Font.Size = 10
+            xlSheet.Cells(j, rngNote.Column).Font.ColorIndex = 5
+        End If
+        'c.2.烧录软件添加备注: SMT用
+        If InStr(xlSheet.Cells(j, rngDcp.Column), "烧录软件") > 0 And _
+           InStr(xlSheet.Cells(j, rngNote.Column), "用") = 0 Then
+            xlSheet.Cells(j, rngNote.Column) = xlSheet.Cells(j, rngNote.Column) + "SMT用"
+            xlSheet.Cells(j, rngNote.Column).Font.Size = 10
+            xlSheet.Cells(j, rngNote.Column).Font.ColorIndex = 5
+        End If
+        'c.3.工具软件添加备注："测试阶段用"
+        If InStr(xlSheet.Cells(j, rngDcp.Column), "工具软件") > 0 And _
+           InStr(xlSheet.Cells(j, rngNote.Column), "用") = 0 Then
+            xlSheet.Cells(j, rngNote.Column) = xlSheet.Cells(j, rngNote.Column) + "测试阶段用"
+            xlSheet.Cells(j, rngNote.Column).Font.Size = 10
+            xlSheet.Cells(j, rngNote.Column).Font.ColorIndex = 5
+        End If
+    Next j
+        
+    Process 95, "所有检测结束！"
     '结束所有调整和创建 添加
     xlBook.Close (True) '关闭工作簿
 
     xlApp.Quit '结束EXCEL对象
     Set xlApp = Nothing '释放xlApp对象
-
+    
+    
+    Process 100, "检测完成！"
+    MsgBox "BOM格式整理完毕！" & vbCrLf & vbCrLf & "BOM检查结束！", vbMsgBoxSetForeground + vbOKOnly + vbInformation, "提示"
+    
     Exit Function
-
+    
 ErrorHandle:
     
     xlBook.Close (True) '关闭工作簿
