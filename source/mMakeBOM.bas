@@ -779,7 +779,7 @@ Function BomChecker(ExcelBomFilePath As String)
             End If
     End If
     
-    Process 20, "定位元素位置...."
+    Process 20, "元素位置完成...."
     
     usedRow = xlSheet.UsedRange.Rows.Count
     usedCol = xlSheet.UsedRange.Columns.Count
@@ -790,6 +790,16 @@ Function BomChecker(ExcelBomFilePath As String)
     For j = rngNum.Row + 1 To usedRow
     
     'a.调整位号对应的列宽?行高使之全部显示
+        '先整理内容 去除软回车 多余的空格等等
+        xlSheet.Cells(j, rngRef.Column) = clearRefStr(xlSheet.Cells(j, rngRef.Column))
+        
+        '调整位号排序
+        Process j * 70 / (usedRow - rngNum.Row) + 20, "排序" & "[" & j & "]" & "行位号..."
+        If xlSheet.Cells(j, rngRef.Column) <> "" Then
+            xlSheet.Cells(j, rngRef.Column) = RealSorted(xlSheet.Cells(j, rngRef.Column), False)
+        End If
+        
+        '调整位号对应的列宽?行高使之全部显示
         Process j * 70 / (usedRow - rngNum.Row) + 20, "调整" & "[" & j & "]" & "行位号..."
         With xlSheet.Cells(j, rngRef.Column)
             .WrapText = True   '自动换行
@@ -799,13 +809,6 @@ Function BomChecker(ExcelBomFilePath As String)
         If xlSheet.Cells(j, rngRef.Column).Height > 408 Then
             '无法再增加行高了  自适应列宽
             xlSheet.Cells(j, rngRef.Column).Columns.AutoFit
-        End If
-        
-        
-        Process j * 70 / (usedRow - rngNum.Row) + 20, "排序" & "[" & j & "]" & "行位号..."
-        '调整位号排序
-        If xlSheet.Cells(j, rngRef.Column) <> "" Then
-            xlSheet.Cells(j, rngRef.Column) = RealSorted(xlSheet.Cells(j, rngRef.Column), False)
         End If
         
         
@@ -871,4 +874,44 @@ ErrorHandle:
     Set xlApp = Nothing '释放xlApp对象
 
     MsgBox "打开Excel格式BOM文件时发生异常！", vbCritical + vbMsgBoxSetForeground + vbOKOnly, "错误"
+End Function
+
+Function clearRefStr(subRefStr As String) As String
+    If subRefStr = "" Then
+        Exit Function
+    End If
+    
+    clearRefStrSub subRefStr, vbCrLf
+    clearRefStrSub subRefStr, vbCr
+    clearRefStrSub subRefStr, vbLf
+    
+    clearRefStr = subRefStr
+    
+End Function
+
+Function clearRefStrSub(ByRef tmpRefStr As String, spChar As String)
+    
+    '在Excel中不是vbCrLf 而是换行vbLf
+    Do While InStr(tmpRefStr, spChar + spChar) > 0
+        tmpRefStr = Replace(tmpRefStr, spChar + spChar, Space(1))
+    Loop
+    Do While InStr(tmpRefStr, Space(1) + spChar) > 0
+        tmpRefStr = Replace(tmpRefStr, Space(1) + spChar, Space(1))
+    Loop
+    Do While InStr(1, tmpRefStr, spChar + Space(1))
+        tmpRefStr = Replace(tmpRefStr, spChar + Space(1), Space(1))
+    Loop
+    Do While InStr(1, tmpRefStr, Space(2))
+        tmpRefStr = Replace(tmpRefStr, Space(2), Space(1))
+    Loop
+    If InStr(tmpRefStr, Space(1)) = 1 Then
+        tmpRefStr = Replace(tmpRefStr, Space(1), "", 1, 1)
+    End If
+    If InStr(tmpRefStr, spChar) = 1 Then
+        tmpRefStr = Replace(tmpRefStr, spChar, "", 1, 1)
+    End If
+    Do While Right(tmpRefStr, 1) = Space(1) Or Right(tmpRefStr, 1) = spChar
+        tmpRefStr = Left(tmpRefStr, Len(tmpRefStr) - 1)
+    Loop
+    
 End Function
