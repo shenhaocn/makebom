@@ -25,7 +25,7 @@ Begin VB.Form MainForm
    ScaleWidth      =   4545
    StartUpPosition =   3  '窗口缺省
    Begin VB.Frame Frame1 
-      Caption         =   "生成BOM"
+      Caption         =   "BOM类型"
       Height          =   1035
       Left            =   180
       TabIndex        =   6
