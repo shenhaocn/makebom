@@ -223,35 +223,35 @@ Option Explicit
 '载入程序配置
 Private Sub Form_Load()
     
+    Dim X As Long
+    Dim Y As Long
+    
     '初始化数据库
     If InitLib(App.Path & "\STD.lst") = False Then
         Command_ImportBom.Enabled = False
     End If
     
-    '获取上次工作目录
-    ProjectDir = GetSetting(App.EXEName, "ProjectDir", "上次工作目录", "E:\")
-    ItemName = GetSetting(App.EXEName, "TaskName", "上一次项目机型名称", "")
+    '获取程序设置
+    ItemName = GetRegValue(App.EXEName, "Product", "")
+    ProjectDir = GetRegValue(App.EXEName, "ProjectDir", "E:\")
     
     ItemNameText.Text = ItemName
+    Combo1.Text = GetRegValue(App.EXEName, "Storage", "TP1")
     
-    '获取程序设置
-    Combo1.Text = GetSetting(App.EXEName, "SelectStorage", "库存类型", "TP1")
-    
-    '初始化窗口位置和状态
-    Dim X As String
-    Dim Y As String
-    X = GetSetting(App.EXEName, "WindowPosition", "Left")
-    Y = GetSetting(App.EXEName, "WindowPosition", "Top")
+    '初始化窗口位置 默认在屏幕中央
+    X = GetRegValue(App.EXEName, "WinLeft", Screen.Width / 2 - Me.Width / 2)
+    Y = GetRegValue(App.EXEName, "WinTop", Screen.Height / 2 - Me.Height / 2)
         
-    If X <> "" And Y <> "" And _
-       Val(X) < Screen.Width And Val(Y) < Screen.Height And _
-       Val(X) > 0 And Val(Y) > 0 Then
-        Me.Move X, Y
+    If X > Screen.Width Or Y > Screen.Height Or _
+       X > 0 Or Y > 0 Then
+        X = Screen.Width / 2 - Me.Width / 2
+        Y = Screen.Height / 2 - Me.Height / 2
     End If
     
-    Dim AlwaysOnTop As String
-    AlwaysOnTop = GetSetting(App.EXEName, "WindowPosition", "AlwaysOnTop", "--")
-    If AlwaysOnTop = "--" Then
+    Me.Move X, Y
+    
+    '获取窗口状态
+    If GetRegValue(App.EXEName, "OnTop", 1) = 1 Then
         menu_winpos.Caption = "--"
         SetWindowsPos_TopMost Me.hwnd
     Else
@@ -271,15 +271,21 @@ End Sub
 
 Private Sub Form_QueryUnload(Cancel As Integer, UnloadMode As Integer)
     '程序配置数据
-    SaveSetting App.EXEName, "SelectStorage", "库存类型", Combo1.Text
+    SetRegValue App.EXEName, "Storage", iREG_SZ, Combo1.Text
     
-    SaveSetting App.EXEName, "ProjectDir", "上次工作目录", ProjectDir
-    SaveSetting App.EXEName, "TaskName", "上一次项目机型名称", ItemNameText.Text
+    SetRegValue App.EXEName, "ProjectDir", iREG_SZ, ProjectDir
+    SetRegValue App.EXEName, "Product", iREG_SZ, ItemNameText.Text
     
     '窗口位置
-    SaveSetting App.EXEName, "WindowPosition", "Left", Me.Left
-    SaveSetting App.EXEName, "WindowPosition", "Top", Me.Top
-    SaveSetting App.EXEName, "WindowPosition", "AlwaysOnTop", menu_winpos.Caption
+    SetRegValue App.EXEName, "WinLeft", iREG_DWORD, Me.Left
+    SetRegValue App.EXEName, "WinTop", iREG_DWORD, Me.Top
+    
+    '窗口状态
+    If menu_winpos.Caption = "|" Then
+        SetRegValue App.EXEName, "OnTop", iREG_DWORD, 0
+    Else
+        SetRegValue App.EXEName, "OnTop", iREG_DWORD, 1
+    End If
     
 End Sub
 
@@ -303,7 +309,7 @@ End Sub
 
 Private Sub menu_checker_Click()
     Dim GetPath As String
-    ProjectDir = GetSetting(App.EXEName, "ProjectDir", "上次工作目录", "E:\")
+    ProjectDir = GetRegValue(App.EXEName, "ProjectDir", "E:\")
     
     CommonDialog1.InitDir = ProjectDir
     CommonDialog1.FileName = ""
@@ -357,10 +363,6 @@ End Sub
 
 
 '库存设置
-Private Sub Combo1_Click()
-    SaveSetting App.EXEName, "SelectStorage", "库存类型", Combo1.Text
-End Sub
-
 Private Sub Combo1_LostFocus()
     Select Case Combo1.Text
     Case "TP1"
@@ -373,8 +375,7 @@ Private Sub Combo1_LostFocus()
         MsgBox "不支持的库存类型！请重新选择", vbCritical + vbMsgBoxSetForeground + vbOKOnly, "错误"
         Combo1.Text = "TP1"
     End Select
-    
-    SaveSetting App.EXEName, "SelectStorage", "库存类型", Combo1.Text
+
 End Sub
 
 '选择需要生成的BOM文件
@@ -450,7 +451,7 @@ Private Sub Command_ImportBom_OLEDragDrop(Data As DataObject, Effect As Long, Bu
         tsvFilePath = filePath
         
         If BomFilePath = "" Then
-            MsgBox "请先选择.BOM文件所在路径！", vbInformation + vbMsgBoxSetForeground + vbOKOnly, "提示"
+            MsgBox "请先选择BOM文件所在路径！", vbInformation + vbMsgBoxSetForeground + vbOKOnly, "提示"
             Exit Sub
         End If
         
@@ -470,11 +471,11 @@ End Sub
 '主控制按钮命令
 Private Sub Command_ImportBom_Click()
     Dim GetPath As String
-    ProjectDir = GetSetting(App.EXEName, "ProjectDir", "上次工作目录", "E:\")
+    ProjectDir = GetRegValue(App.EXEName, "ProjectDir", "E:\")
     
     CommonDialog1.InitDir = ProjectDir
     CommonDialog1.FileName = ""
-    CommonDialog1.DialogTitle = "请选择.BOM文件"
+    CommonDialog1.DialogTitle = "请选择BOM文件"
     CommonDialog1.Filter = "All File(*.*)|*.*|BOM 文件(*.BOM; *.xls)|*.BOM;*.xls"
     CommonDialog1.FilterIndex = 2
     CommonDialog1.ShowOpen
@@ -676,7 +677,7 @@ Public Sub BomStage_Two()
     msgstr = msgstr + "          NC     元件个数为   ： " & PartNum(0) & vbCrLf
     msgstr = msgstr + "          DBG    元件个数为   ： " & PartNum(1) & vbCrLf
     msgstr = msgstr + "          DBG_NC 元件个数为   ： " & PartNum(2) & vbCrLf & vbCrLf
-    msgstr = msgstr + "          生成的bmf文件不建议手动修改" & vbCrLf & vbCrLf
+
     msgstr = msgstr + "    注意：生成的BOM文件需要检查修改后才可供评审 "
     
     MsgBox msgstr, vbInformation + vbOKOnly + vbMsgBoxSetForeground, "BOM 文件创建成功"

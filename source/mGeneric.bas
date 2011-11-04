@@ -225,16 +225,58 @@ Function GetFileContents(filePath As String) As String
         cleanContents = Replace(cleanContents, vbCrLf, "", 1, 1)
     End If
     
+    GetFileContents = cleanContents
+End Function
+
+Function GetBomContents(filePath As String) As String
+    
+    Dim BomLine()    As String
+    Dim BomAtom()    As String
+    Dim BomInfo      As String
+    Dim AtomNum      As Integer
+    Dim j            As Integer
+    
+    BomInfo = GetFileContents(filePath)
+    
     '对于BOM文件来说需要整理下格式
-    Do While InStr(1, cleanContents, vbTab + vbCrLf)
-        cleanContents = Replace(cleanContents, vbTab + vbCrLf, vbTab)
-    Loop
-    '对于BOM文件来说需要整理下格式
-    Do While InStr(1, cleanContents, vbCrLf + vbTab)
-        cleanContents = Replace(cleanContents, vbCrLf + vbTab, vbTab)
+    Do While InStr(1, BomInfo, vbCrLf + vbTab)
+        BomInfo = Replace(BomInfo, vbCrLf + vbTab, vbTab)
     Loop
     
-    GetFileContents = cleanContents
+    '获取BOM文件的列数
+    BomLine = Split(BomInfo, vbCrLf) '取出源文件行数，按照回车换行来分隔成数组
+    AtomNum = UBound(Split(BomLine(0), vbTab)) '均以首行列数为标准
+    
+    BomInfo = ""
+    '核对每列的元素个数 元素个数不足 尝试补齐
+     For j = 0 To UBound(BomLine) - 1
+        BomAtom = Split(BomLine(j), vbTab)
+        
+        '元素个数不足 与下一列合并
+        If UBound(BomAtom) <> AtomNum Then
+            BomInfo = BomInfo + BomLine(j) + BomLine(j + 1) + vbCrLf
+            j = j + 1
+        Else
+            BomInfo = BomInfo + BomLine(j) + vbCrLf
+        End If
+    Next j
+    
+    BomInfo = BomInfo + BomLine(j)
+    
+    '去掉最后的换行
+    'BomInfo = Left(BomInfo, Len(BomInfo) - 2)
+    
+    GetBomContents = BomInfo
+    
+'for debug
+'    If Dir(SaveAsPath & "_test.txt") <> "" Then
+'        Kill SaveAsPath & "_test.txt"
+'    End If
+'
+'    Open SaveAsPath & "_test.txt" For Output As #1
+'    Print #1, GetBomContents
+'    Close #1
+    
 End Function
 
 '参数一 要写入的文件地址，参数二 修改的行数 ，参数三 写入或替换的字符串
@@ -343,7 +385,7 @@ Function AutoLoginERP(uid As String, pwd As String)
     '获取库存类型
     Dim SelStorage As String
     
-    SelStorage = GetSetting(App.EXEName, "SelectStorage", "库存类型", "TP1")
+    SelStorage = GetRegValue(App.EXEName, "Storage", "TP1")
     
     Select Case SelStorage
     Case "TP1"
@@ -424,7 +466,7 @@ Function GetInfoFromERP(uid As String, pwd As String)
     '获取库存类型
     Dim SelStorage As String
     
-    SelStorage = GetSetting(App.EXEName, "SelectStorage", "库存类型", "TP1")
+    SelStorage = GetRegValue(App.EXEName, "Storage", "TP1")
     
     Select Case SelStorage
     Case "TP1"

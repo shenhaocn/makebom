@@ -134,13 +134,15 @@ Function ZuSorted(Zu() As Variant, prefixStr As String, Optional BigToSmall As B
 End Function
 
 '由于位号长度不一，常规排序方法不可行 因此需要特殊排序方法
-Function RealSorted(RefStr As String, Optional BigToSmall As Boolean) As String
+Function RealSorted(ByRef RefStr As String, Optional BigToSmall As Boolean) As Boolean
     Dim srcStr()    As String
     Dim intSorted() As Variant
     Dim i           As Long
     Dim Index       As Long '位号后数字开始的位置
     
     Dim prefixStr   As String
+    
+    RealSorted = False
     
     srcStr = Split(RefStr, Space(1))
     ReDim intSorted(UBound(srcStr))
@@ -155,10 +157,15 @@ Function RealSorted(RefStr As String, Optional BigToSmall As Boolean) As String
     Next
     
     For i = LBound(intSorted) To UBound(intSorted)
-        intSorted(i) = Val(Right(srcStr(i), Len(srcStr(i)) - Index))
+        If IsNumeric(Right(srcStr(i), Len(srcStr(i)) - Index)) = True Then
+            intSorted(i) = Val(Right(srcStr(i), Len(srcStr(i)) - Index))
+        Else
+            RealSorted = False
+        End If
     Next i
     
-    RealSorted = ZuSorted(intSorted, prefixStr, BigToSmall)
+    RefStr = ZuSorted(intSorted, prefixStr, BigToSmall)
+    RealSorted = True
     
 End Function
 
@@ -169,6 +176,7 @@ Function addDbgNcPart(xlSheet As Excel.Worksheet, bmfAtom() As String, _
 
     Dim rngNum       As Range
     Dim partRefStr() As String
+    Dim tmpRefStr    As String
     Dim i            As Integer
     
     '是否需要合并元件
@@ -206,8 +214,11 @@ Function addDbgNcPart(xlSheet As Excel.Worksheet, bmfAtom() As String, _
             'xlsInsert xlSheet, ItemNum2, rngPos2.Row, bmfAtom, OrgEnable
             xlSheet.Cells(rngNum.Row, 5) = CInt(xlSheet.Cells(rngNum.Row, 5)) + CInt(bmfAtom(BMF_Quantity))
             xlSheet.Cells(rngNum.Row, 5).Font.ColorIndex = 5
+            
             '位号需要排序！
-            xlSheet.Cells(rngNum.Row, 6) = RealSorted(xlSheet.Cells(rngNum.Row, 6) + " " + bmfAtom(BMF_PartRef), False)
+            tmpRefStr = xlSheet.Cells(rngNum.Row, 6) + " " + bmfAtom(BMF_PartRef)
+            RealSorted tmpRefStr, False
+            xlSheet.Cells(rngNum.Row, 6) = tmpRefStr
             xlSheet.Cells(rngNum.Row, 6).Font.ColorIndex = 5
         End If
     End With
@@ -738,6 +749,7 @@ Function BomChecker(ExcelBomFilePath As String)
     Dim usedCol   As Integer  '总列数
     
     Dim BomAtom() As String
+    Dim tmpRefStr As String
 
     Set xlApp = CreateObject("Excel.Application")
     xlApp.Visible = False
@@ -796,7 +808,13 @@ Function BomChecker(ExcelBomFilePath As String)
         '调整位号排序
         Process j * 70 / (usedRow - rngNum.Row) + 20, "排序" & "[" & j & "]" & "行位号..."
         If xlSheet.Cells(j, rngRef.Column) <> "" Then
-            xlSheet.Cells(j, rngRef.Column) = RealSorted(xlSheet.Cells(j, rngRef.Column), False)
+            tmpRefStr = xlSheet.Cells(j, rngRef.Column)
+            If RealSorted(tmpRefStr, False) = True Then
+                xlSheet.Cells(j, rngRef.Column) = tmpRefStr
+            Else
+                MsgBox "第[" & j & "]行位号格式错误，无法进行重新排序！", vbCritical + vbMsgBoxSetForeground + vbOKOnly, "错误"
+                GoTo ErrorHandle
+            End If
         End If
         
         '调整位号对应的列宽?行高使之全部显示
@@ -891,26 +909,20 @@ End Function
 
 Function clearRefStrSub(ByRef tmpRefStr As String, spChar As String)
     
-    '在Excel中不是vbCrLf 而是换行vbLf
-    Do While InStr(tmpRefStr, spChar + spChar) > 0
-        tmpRefStr = Replace(tmpRefStr, spChar + spChar, Space(1))
+    'vbCrLf -> Space(1)
+    Do While InStr(tmpRefStr, spChar) > 0
+        tmpRefStr = Replace(tmpRefStr, spChar, Space(1))
     Loop
-    Do While InStr(tmpRefStr, Space(1) + spChar) > 0
-        tmpRefStr = Replace(tmpRefStr, Space(1) + spChar, Space(1))
-    Loop
-    Do While InStr(1, tmpRefStr, spChar + Space(1))
-        tmpRefStr = Replace(tmpRefStr, spChar + Space(1), Space(1))
-    Loop
-    Do While InStr(1, tmpRefStr, Space(2))
+    'Space(2)->Space(1)
+    Do While InStr(tmpRefStr, Space(2))
         tmpRefStr = Replace(tmpRefStr, Space(2), Space(1))
     Loop
+    '位于开始位置的Space(1)
     If InStr(tmpRefStr, Space(1)) = 1 Then
         tmpRefStr = Replace(tmpRefStr, Space(1), "", 1, 1)
     End If
-    If InStr(tmpRefStr, spChar) = 1 Then
-        tmpRefStr = Replace(tmpRefStr, spChar, "", 1, 1)
-    End If
-    Do While Right(tmpRefStr, 1) = Space(1) Or Right(tmpRefStr, 1) = spChar
+    '位于结束位置的Space(1)
+    Do While Right(tmpRefStr, 1) = Space(1)
         tmpRefStr = Left(tmpRefStr, Len(tmpRefStr) - 1)
     Loop
     

@@ -21,7 +21,7 @@ Public BomPCBfootprint As Integer
 Public PartNum(6)      As Integer '所有元件数信息
 
 Public ProjectDir      As String  '保存上次打开的目录
-Public ItemName        As String  '保存上次打开的目录
+Public ItemName        As String  '保存项目名称
 
 Public BomFilePath     As String  '原始文件完整名
 Public BmfFilePath     As String  '原始文件完整名
@@ -96,7 +96,7 @@ Function BuildProjectPath(srcPath As String)
 
     Close #1
     
-    SaveSetting App.EXEName, "ProjectDir", "上次工作目录", ProjectDir
+    SetRegValue App.EXEName, "ProjectDir", iREG_SZ, ProjectDir
 End Function
 
 
@@ -166,7 +166,7 @@ Function BomMakePLExcel()
     Set xlBook = xlApp.Workbooks.Open(SaveAsPath & "_批量资源查询.xls")
     Set xlSheet = xlBook.Worksheets(1)
     
-    Bom = GetFileContents(BomFilePath)
+    Bom = GetBomContents(BomFilePath)
     
     BomLine = Split(Bom, vbCrLf)
     
@@ -223,8 +223,9 @@ Function ReadBomFile() As Boolean
     Dim newbomstr()     As String
     
     Dim i               As Integer
+    Dim AtomNum         As Integer
     
-    FileContents = GetFileContents(BomFilePath)
+    FileContents = GetBomContents(BomFilePath)
     fileinfo = Split(FileContents, vbCrLf) '取出源文件行数，按照回车换行来分隔成数组
     
     'j表示源文件BOM中的行
@@ -242,6 +243,7 @@ Function ReadBomFile() As Boolean
     BomPCBfootprint = -1
     
     newbomstr = Split(fileinfo(0), vbTab)
+    AtomNum = UBound(newbomstr)
     For i = 0 To UBound(newbomstr)
         If newbomstr(i) = "Item Number" Then
             BomItemNumber = i
@@ -265,8 +267,7 @@ Function ReadBomFile() As Boolean
     
     If BomItemNumber = -1 Or BomPartNumber = -1 Or BomValue = -1 Or BomQuantity = -1 Or BomPartRef = -1 Or BomPCBfootprint = -1 Then
         MsgBox "BOM文件格式错误", vbCritical + vbMsgBoxSetForeground + vbOKOnly, "错误"
-        ReadBomFile = False
-        Exit Function
+        GoTo ErrorHandle
     End If
     
     Dim IgLibInfo()        As String
@@ -276,18 +277,23 @@ Function ReadBomFile() As Boolean
     Dim j      As Integer
     For j = 1 To UBound(fileinfo) - 1
         newbomstr = Split(fileinfo(j), vbTab)
+        
         'BOM中每个非"N"的元件必须拥有料号(可为模糊料号)
         IsNone = QueryLib(IgLibInfo, newbomstr(BomPCBfootprint))
         If IsNone = 0 Then
             If newbomstr(BomPartNumber) = "" Then
-                ReadBomFile = False
                 MsgBox "封装为[" & newbomstr(BomPCBfootprint) & "]料号不存在！", vbCritical + vbMsgBoxSetForeground + vbOKOnly, "BOM文件规范错误"
-                Exit Function
+                GoTo ErrorHandle
             End If
         End If
     Next
     
     ReadBomFile = True
+    Exit Function
+
+ErrorHandle:
+    
+    ReadBomFile = False
 End Function
 
 '遍历旧Bom 检查BMF文件格式是否正确
@@ -345,8 +351,10 @@ Function LookupBmfAtom(checkStr As String, checkCol As Integer, returnCol As Int
     '遍历旧Bom 查找对应的字符串
     For i = 1 To UBound(bmfBomLine) - 1
         bmfAtom = Split(bmfBomLine(i), vbTab)
-        If checkStr = bmfAtom(checkCol) Then
-            LookupBmfAtom = bmfAtom(returnCol)
+        If checkCol <= UBound(bmfAtom) Then
+            If checkStr = bmfAtom(checkCol) Then
+                LookupBmfAtom = bmfAtom(returnCol)
+            End If
         End If
     Next i
     
@@ -376,9 +384,11 @@ Function LookupBmfRow(checkStr As String, checkCol As Integer) As Integer
     '遍历旧Bom 查找对应的字符串
     For i = 1 To UBound(bmfBomLine) - 1
         bmfAtom = Split(bmfBomLine(i), vbTab)
-        If checkStr = bmfAtom(checkCol) Then
-            LookupBmfRow = i
-            Exit For
+        If checkCol <= UBound(bmfAtom) Then
+            If checkStr = bmfAtom(checkCol) Then
+                LookupBmfRow = i
+                Exit For
+            End If
         End If
     Next i
     
@@ -473,9 +483,9 @@ Function SetBmfAtom(Row As Integer, Col As Integer, addStr As String)
     For i = 1 To UBound(newBomLine) - 1
         Put #1, , newBomLine(i) & vbCrLf
     Next i
-        
-    Put #1, , vbCrLf
-
+    
+    Put #1, , newBomLine(i)
+    
     Close #1
     
 End Function
@@ -540,7 +550,7 @@ Function BmfMaker()
     'BMF文件是否存在 是否可以利用
     BmfExistFlag = CheckBmf
     
-    oldBom = GetFileContents(BomFilePath)
+    oldBom = GetBomContents(BomFilePath)
     
     oldBomLine = Split(oldBom, vbCrLf)
     newBomLine = Split(oldBom, vbCrLf)
@@ -684,9 +694,9 @@ Function BmfMaker()
     For j = 1 To UBound(newBomLine) - 1
         Put #1, , newBomLine(j) & vbCrLf
     Next j
-        
-    'Put #1, , vbCrLf
-
+    
+    Put #1, , newBomLine(j)
+    
     Close #1
     
     '保存元件个数，供后续调用
@@ -719,47 +729,53 @@ Function ImportTSV() As Boolean
 
     Process 51, "分析tsv文件信息..."
     
-    Dim FileContents    As String
-    Dim fileinfo()      As String
-    Dim bomstr()        As String
+    Dim bmfBom          As String
+    Dim bmfBomLine()    As String
+    Dim bmfAtom()       As String
+    
+    Dim FindRow         As String
+    Dim tsvAtom()        As String
     
     Dim i               As Integer
-    Dim FindRow         As Integer
     
-    '自动适应不同的tsv文件编码
-    FileContents = UEFLoadTextFile(tsvFilePath, UEF_AUTO)
-    fileinfo = Split(FileContents, vbCrLf) '取出源文件行数，按照回车换行来分隔成数组
+    If Dir(BmfFilePath) = "" Then
+        Exit Function
+    End If
+    
+    bmfBom = GetFileContents(BmfFilePath)
+    bmfBomLine = Split(bmfBom, vbCrLf)
     
     '获取库存类型
     Dim SelStorage As String
     
-    SelStorage = GetSetting(App.EXEName, "SelectStorage", "库存类型", "TP1")
+    SelStorage = GetRegValue(App.EXEName, "Storage", "TP1")
         
     
     '序号    物料(编码)    状态    描述    单位    替代关系    总可 用量   近期 可用
     '0       1             2       3       4       5           6           7
     
-    For i = 1 To UBound(fileinfo) - 1
-        bomstr = Split(fileinfo(i), vbTab)
+    For i = 1 To UBound(bmfBomLine) - 1
+        bmfAtom = Split(bmfBomLine(i), vbTab)
         
-        Process i * 20 / UBound(fileinfo) + 51, "分析物料  [" & bomstr(1) & "]..."
+        Process i * 20 / UBound(bmfBomLine) + 51, "分析物料  [" & bmfAtom(1) & "]..."
         
         '查找并填入相关信息
-        FindRow = LookupBmfRow(bomstr(1), BMF_PartNum)
-        If FindRow > 0 Then
+        FindRow = LookupTsvRow(bmfAtom(BMF_PartNum), 1)
+        If FindRow <> "" Then
+            tsvAtom = Split(FindRow, vbTab)
             '物料描述
-            SetBmfAtom FindRow, BMF_Description, bomstr(3)
+            SetBmfAtom i, BMF_Description, tsvAtom(3)
             
             '库存信息
             Select Case SelStorage
             Case "TP1"
-                SetBmfAtom FindRow, BMF_TP1, bomstr(7)
+                SetBmfAtom i, BMF_TP1, tsvAtom(7)
             Case "TP2"
-                SetBmfAtom FindRow, BMF_TP2, bomstr(7)
+                SetBmfAtom i, BMF_TP2, tsvAtom(7)
             Case "TP3"
-                SetBmfAtom FindRow, BMF_TP3, bomstr(7)
+                SetBmfAtom i, BMF_TP3, tsvAtom(7)
             Case Else
-                SetBmfAtom FindRow, BMF_TP1, bomstr(7)
+                SetBmfAtom i, BMF_TP1, tsvAtom(7)
             End Select
             
         End If
@@ -768,6 +784,39 @@ Function ImportTSV() As Boolean
     
     Process 72, "BOM中间文件生成完毕..."
  
+End Function
+
+
+'根据给定的字符串查找给定的列，返回查找到的第一个行号
+Function LookupTsvRow(checkStr As String, checkCol As Integer) As String
+        
+    Dim tsvInfo          As String
+    Dim tsvInfoLine()    As String
+    
+    Dim tsvAtom()       As String
+    
+    Dim i               As Integer
+    
+    '初始化返回值
+    LookupTsvRow = ""
+    
+    If Dir(tsvFilePath) = "" Then
+        Exit Function
+    End If
+    
+    tsvInfo = GetFileContents(tsvFilePath)
+    
+    tsvInfoLine = Split(tsvInfo, vbCrLf)
+
+    '遍历tsv 查找对应的字符串 料号编码
+    For i = 1 To UBound(tsvInfoLine) - 1
+        tsvAtom = Split(tsvInfoLine(i), vbTab)
+        If checkStr = tsvAtom(checkCol) Then
+            LookupTsvRow = tsvInfoLine(i)
+            Exit For
+        End If
+    Next i
+    
 End Function
 
 
