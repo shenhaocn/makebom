@@ -58,7 +58,7 @@ End Enum
 '**日    期：
 '**版    本：V3.6.7
 '*************************************************************************
-Function xlsInsert(xlSheet As Excel.Worksheet, ItemNum As Integer, Row As Long, insertStr() As String, OrgEnable As Boolean)
+Function xlsInsert(xlSheet As Excel.Worksheet, ItemNum As Integer, Row As Long, insertStr() As String, OrgEnable As Boolean, Optional NoteStr As String)
     
     '首行不需要加入
     If ItemNum > 1 Then
@@ -69,6 +69,10 @@ Function xlsInsert(xlSheet As Excel.Worksheet, ItemNum As Integer, Row As Long, 
     xlSheet.Cells(ItemNum + Row, 1) = ItemNum
     xlSheet.Cells(ItemNum + Row, 2) = insertStr(BMF_PartNum)
     xlSheet.Cells(ItemNum + Row, 3) = insertStr(BMF_Description)
+    If NoteStr <> vbNullString Then
+        xlSheet.Cells(ItemNum + Row, 4) = NoteStr
+        xlSheet.Cells(ItemNum + Row, 4).Font.ColorIndex = 5
+    End If
     xlSheet.Cells(ItemNum + Row, 5) = insertStr(BMF_Quantity)
     xlSheet.Cells(ItemNum + Row, 6) = insertStr(BMF_PartRef)
     xlSheet.Cells(ItemNum + Row, 7) = insertStr(BMF_PcbFB)
@@ -192,10 +196,9 @@ Function addDbgNcPart(xlSheet As Excel.Worksheet, bmfAtom() As String, _
 
                 Case "S+"
                 ItemNum1 = ItemNum1 + 1
-                xlsInsert xlSheet, ItemNum1, rngPos1.Row, bmfAtom, OrgEnable
-                xlSheet.Rows((rngPos1.Row + ItemNum1) & ":" & (rngPos1.Row + ItemNum1)).Interior.Color = 16737792
+                xlsInsert xlSheet, ItemNum1, rngPos1.Row, bmfAtom, OrgEnable, "位号对应多个物料"
                 xlSheet.Rows((rngPos1.Row + ItemNum1) & ":" & (rngPos1.Row + ItemNum1)).Font.ColorIndex = 5
-
+                
                 Case "L"
                 ItemNum2 = ItemNum2 + 1
                 xlsInsert xlSheet, ItemNum2, rngPos2.Row, bmfAtom, OrgEnable
@@ -217,9 +220,14 @@ Function addDbgNcPart(xlSheet As Excel.Worksheet, bmfAtom() As String, _
             
             '位号需要排序！
             tmpRefStr = xlSheet.Cells(rngNum.Row, 6) + " " + bmfAtom(BMF_PartRef)
-            RealSorted tmpRefStr, False
+            If RealSorted(tmpRefStr, False) = False Then
+                xlSheet.Cells(rngNum.Row, 4) = "位号排序异常！"
+                xlSheet.Cells(rngNum.Row, 4).Font.ColorIndex = 5
+            End If
+            
             xlSheet.Cells(rngNum.Row, 6) = tmpRefStr
             xlSheet.Cells(rngNum.Row, 6).Font.ColorIndex = 5
+            
         End If
     End With
 End Function
@@ -384,7 +392,6 @@ ErrorHandle:
 End Function
 
 '填充相应的数据
-
 '=====================================================================================
 '1.预BOM：Capture中导出的BOM除None元件、NC元件、DBG元件、DBG_NC元件之外的所有元件的集合。
 '2.NC_DBG元件xls
@@ -549,8 +556,7 @@ Function CreateBOM(bt_value As BomType) As Boolean
 
                     Case "S+"
                     ItemNum1 = ItemNum1 + 1
-                    xlsInsert xlSheet, ItemNum1, rngPos1.Row, bmfAtom, OrgEnable
-                    xlSheet.Rows((rngPos1.Row + ItemNum1) & ":" & (rngPos1.Row + ItemNum1)).Interior.Color = 16737792
+                    xlsInsert xlSheet, ItemNum1, rngPos1.Row, bmfAtom, OrgEnable, "位号对应多个物料"
 
                     Case "L"
                     ItemNum2 = ItemNum2 + 1
@@ -812,8 +818,8 @@ Function BomChecker(ExcelBomFilePath As String)
             If RealSorted(tmpRefStr, False) = True Then
                 xlSheet.Cells(j, rngRef.Column) = tmpRefStr
             Else
-                MsgBox "第[" & j & "]行位号格式错误，无法进行重新排序！", vbCritical + vbMsgBoxSetForeground + vbOKOnly, "错误"
-                GoTo ErrorHandle
+                xlSheet.Cells(j, rngNote.Column) = "位号重排序异常！"
+                xlSheet.Cells(j, rngNote.Column).Font.ColorIndex = 5
             End If
         End If
         
@@ -839,9 +845,11 @@ Function BomChecker(ExcelBomFilePath As String)
                   '不相等颜色标记
                   xlSheet.Cells(j, rngQty.Column).Interior.Color = 255 '以强调的颜色显示
                   xlSheet.Cells(j, rngRef.Column).Interior.Color = 255 '以强调的颜色显示
-                  xlSheet.Cells(j, rngNote.Column) = xlSheet.Cells(j, rngNote.Column) + "元件数位号数不相等！"
+                  xlSheet.Cells(j, rngNote.Column) = xlSheet.Cells(j, rngNote.Column) + _
+                                                     "元件数[" & CInt(xlSheet.Cells(j, rngQty.Column)) & "]" & _
+                                                     "位号数[" & (UBound(BomAtom) + 1) & "]不相等！"
                   xlSheet.Cells(j, rngNote.Column).Interior.Color = 255 '以强调的颜色显示
-                  xlSheet.Cells(j, rngNote.Column).Font.Size = 10
+                  xlSheet.Cells(j, rngNote.Column).Font.Size = 8
                End If
            End If
         End If

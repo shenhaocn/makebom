@@ -243,7 +243,7 @@ Private Sub Form_Load()
     Y = GetRegValue(App.EXEName, "WinTop", Screen.Height / 2 - Me.Height / 2)
         
     If X > Screen.Width Or Y > Screen.Height Or _
-       X > 0 Or Y > 0 Then
+       X < 0 Or Y < 0 Then
         X = Screen.Width / 2 - Me.Width / 2
         Y = Screen.Height / 2 - Me.Height / 2
     End If
@@ -721,19 +721,6 @@ Private Sub BomCreate()
         
     End If
     
-    If Check_领料.Value = Checked Then
-        Process 85, "创建领料BOM ..."
-        'tsv文件是否失效？
-        If DateDiff("d", CDate(GetFileWriteTime(tsvFilePath)), Now) > 3 Then
-            MsgBox "tsv文件已经过期[" & GetFileWriteTime(tsvFilePath) & "]！" & vbCrLf & vbCrLf & _
-                   "生成领料BOM需最新的tsv文件！", vbCritical + vbOKOnly + vbMsgBoxSetForeground, "警告"
-        Else
-            ExcelCreate BOM_领料
-            CreateBOM BOM_领料
-        End If
-        
-    End If
-    
     If Check_调试.Value = Checked Then
         Process 90, "创建调试BOM ..."
         ExcelCreate BOM_调试
@@ -747,6 +734,20 @@ Private Sub BomCreate()
         CreateBOM BOM_生产
         
     End If
+    
+    If Check_领料.Value = Checked Then
+        Process 85, "创建领料BOM ..."
+        'tsv文件是否失效？
+        If DateDiff("d", CDate(GetFileWriteTime(tsvFilePath)), Now) > 3 Then
+            MsgBox "tsv文件已经过期[" & GetFileWriteTime(tsvFilePath) & "]！" & vbCrLf & vbCrLf & _
+                   "生成领料BOM需最新的tsv文件！", vbCritical + vbOKOnly + vbMsgBoxSetForeground, "警告"
+        Else
+            ExcelCreate BOM_领料
+            CreateBOM BOM_领料
+        End If
+        
+    End If
+    
 End Sub
 
 Private Sub KillBom()
