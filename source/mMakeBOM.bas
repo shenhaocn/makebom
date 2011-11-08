@@ -118,14 +118,14 @@ End Function
 '排序数组（可以是字符串数组）：BigToSmall=True 从大到小，否则 从小大到
 Function ZuSorted(Zu() As Variant, prefixStr As String, Optional BigToSmall As Boolean) As String
    
-   Dim i As Long, j As Long, S As Variant
+   Dim i As Long, j As Long, s As Variant
    Dim TF As Boolean, nL As Long, nU As Long
    
    nL = LBound(Zu): nU = UBound(Zu)
    For i = nL To nU
       For j = nL To nU '       从大到小                从小大到
         If BigToSmall Then TF = Zu(j) < Zu(i) Else TF = Zu(j) > Zu(i)
-        If TF Then S = Zu(i): Zu(i) = Zu(j): Zu(j) = S
+        If TF Then s = Zu(i): Zu(i) = Zu(j): Zu(j) = s
       Next j
    Next i
    
@@ -756,6 +756,14 @@ Function BomChecker(ExcelBomFilePath As String)
     
     Dim BomAtom() As String
     Dim tmpRefStr As String
+    
+    Dim AutoFitFlag As Boolean
+    
+    If CInt(GetExcelVer) > 14 Then
+        AutoFitFlag = True
+    Else
+        AutoFitFlag = False
+    End If
 
     Set xlApp = CreateObject("Excel.Application")
     xlApp.Visible = False
@@ -804,6 +812,12 @@ Function BomChecker(ExcelBomFilePath As String)
     '===============================================================================================
     '开始Check
     '===============================================================================================
+    
+    Dim intFontSize   As Integer  '字体大小  单位：磅
+    Dim intWordWidth  As Integer  '单词宽度  单位：字符
+    Dim calRowHeight  As Integer  '计算所得行高
+    Dim calColWidth   As Integer  '计算所得列宽
+    
     Dim j As Integer
     For j = rngNum.Row + 1 To usedRow
     
@@ -825,14 +839,54 @@ Function BomChecker(ExcelBomFilePath As String)
         
         '调整位号对应的列宽?行高使之全部显示
         Process j * 70 / (usedRow - rngNum.Row) + 20, "调整" & "[" & j & "]" & "行位号..."
-        With xlSheet.Cells(j, rngRef.Column)
-            .WrapText = True   '自动换行
-            .Rows.AutoFit      '自适应行高
-        End With
-        '自此大多数显示应该都正确了
-        If xlSheet.Cells(j, rngRef.Column).Height > 408 Then
-            '无法再增加行高了  自适应列宽
-            xlSheet.Cells(j, rngRef.Column).Columns.AutoFit
+        If xlSheet.Cells(j, rngRef.Column) <> "" Then
+            '获取字体大小 单词宽度
+            intFontSize = xlSheet.Cells(j, rngRef.Column).Font.Size * 6 / 5
+            intWordWidth = WordWidth(xlSheet.Cells(j, rngRef.Column)) + 1
+            '计算所需的合适的行高 列宽
+            '单词宽度为零时不调整
+            'Debug.Print "字体大小为：" & intFontSize & "    单词宽度为：" & intWordWidth
+            If xlSheet.Cells(j, rngRef.Column).Height / intFontSize * xlSheet.Cells(j, rngRef.Column).ColumnWidth < _
+               Len(xlSheet.Cells(j, rngRef.Column)) Then
+                AutoFitFlag = False
+                
+                calColWidth = Fix(xlSheet.Cells(j, rngRef.Column).ColumnWidth / intWordWidth) * intWordWidth
+                calRowHeight = (Len(xlSheet.Cells(j, rngRef.Column)) / xlSheet.Cells(j, rngRef.Column).ColumnWidth + 1) * intFontSize
+                If calRowHeight > 408 Then
+                    calColWidth = (Fix(xlSheet.Cells(j, rngRef.Column).ColumnWidth / intWordWidth) + 1) * intWordWidth
+                    calRowHeight = (Len(xlSheet.Cells(j, rngRef.Column)) / calColWidth + 1) * intFontSize
+                    
+                    Do While calRowHeight > 408
+                        calColWidth = (Fix(calColWidth / intWordWidth) + 1) * intWordWidth
+                        calRowHeight = (Len(xlSheet.Cells(j, rngRef.Column)) / calColWidth + 1) * intFontSize
+                    Loop
+                End If
+                
+                If calRowHeight > 408 Then
+                    xlSheet.Cells(j, rngNote.Column) = "自动调整行高异常！"
+                    xlSheet.Cells(j, rngNote.Column).FontSize = 10
+                    xlSheet.Cells(j, rngNote.Column).Font.ColorIndex = 5
+                End If
+            Else
+                AutoFitFlag = True
+            End If
+            
+            If AutoFitFlag Then
+                '可自动适应 OK
+                With xlSheet.Cells(j, rngRef.Column)
+                    .WrapText = True   '自动换行
+                    .Rows.AutoFit      '自适应行高
+                End With
+                '自此大多数显示应该都正确了
+                If xlSheet.Cells(j, rngRef.Column).Height > 408 Then
+                    xlSheet.Cells(j, rngRef.Column).Columns.AutoFit
+                End If
+            Else
+                '需要手动计算 手动调整
+                xlSheet.Cells(j, rngRef.Column).RowHeight = calRowHeight
+                xlSheet.Cells(j, rngRef.Column).ColumnWidth = calColWidth
+                
+            End If
         End If
         
         
@@ -900,6 +954,21 @@ ErrorHandle:
     Set xlApp = Nothing '释放xlApp对象
 
     MsgBox "打开Excel格式BOM文件时发生异常！", vbCritical + vbMsgBoxSetForeground + vbOKOnly, "错误"
+End Function
+
+Function WordWidth(ByRef RefStr As String) As Integer
+    Dim srcStr()    As String
+    Dim i           As Long
+    
+    srcStr = Split(RefStr, Space(1))
+    
+    WordWidth = 0
+    For i = LBound(srcStr) To UBound(srcStr)
+        If Len(srcStr(i)) > WordWidth Then
+            WordWidth = Len(srcStr(i))
+        End If
+    Next
+    
 End Function
 
 Function clearRefStr(subRefStr As String) As String

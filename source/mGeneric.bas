@@ -11,188 +11,222 @@ Attribute VB_Name = "mGeneric"
 '*************************************************************************************
 Option Explicit
 
-'==============================================================================
-' 读取文件建立时间 修改时间 保存时间
-'==============================================================================
-Public Const OFS_MAXPATHNAME = 128
-Public Const OF_READ = &H0
-Public Type OFSTRUCT
-    cBytes As Byte
-    fFixedDisk As Byte
-    nErrCode As Integer
-    Reserved1 As Integer
-    Reserved2 As Integer
-    szPathName(OFS_MAXPATHNAME) As Byte
-End Type
 
-Public Type SYSTEMTIME
-     wYear As Integer
-     wMonth As Integer
-     wDayOfWeek As Integer
-     wDay As Integer
-     wHour As Integer
-     wMinute As Integer
-     wSecond As Integer
-     wMilliseconds As Integer
-End Type
-
-Public Type FileTime
-     dwLowDateTime As Long
-     dwHighDateTime As Long
-End Type
-
-
-Public Type BY_HANDLE_FILE_INFORMATION
-     dwFileAttributes As Long
-     ftCreationTime As FileTime
-     ftLastAccessTime As FileTime
-     ftLastWriteTime As FileTime
-     dwVolumeSerialNumber As Long
-     nFileSizeHigh As Long
-     nFileSizeLow As Long
-     nNumberOfLinks As Long
-     nFileIndexHigh As Long
-     nFileIndexLow As Long
-End Type
-
-Public Type TIME_ZONE_INFORMATION
-     bias As Long
-     StandardName(32) As Integer
-     StandardDate As SYSTEMTIME
-     StandardBias As Long
-     DaylightName(32) As Integer
-     DaylightDate As SYSTEMTIME
-     DaylightBias As Long
-End Type
-
-
-Public Declare Function GetTimeZoneInformation Lib "kernel32" (lpTimeZoneInformation As TIME_ZONE_INFORMATION) As Long
-Public Declare Function OpenFile Lib "kernel32" (ByVal lpFileName As String, lpReOpenBuff As OFSTRUCT, ByVal wStyle As Long) As Long
-Public Declare Function GetFileInformationByHandle Lib "kernel32" (ByVal hFile As Long, lpFileInformation As BY_HANDLE_FILE_INFORMATION) As Long
-Public Declare Function CloseHandle Lib "kernel32" (ByVal hObject As Long) As Long
-Public Declare Function FileTimeToSystemTime Lib "kernel32" (lpFileTime As FileTime, lpSystemTime As SYSTEMTIME) As Long
-Public Const OF_READWRITE = &H2
- 
-Public Declare Function SetFileTime Lib "kernel32" (ByVal hFile As Long, lpCreationTime As Any, lpLastAccessTime As Any, lpLastWriteTime As Any) As Long
-Public Declare Function SystemTimeToFileTime Lib "kernel32" (lpSystemTime As SYSTEMTIME, lpFileTime As FileTime) As Long
-Public Declare Sub GetSystemTime Lib "kernel32" (lpSystemTime As SYSTEMTIME)
-Public Declare Sub GetLocalTime Lib "kernel32" (lpSystemTime As SYSTEMTIME)
-
-'==============================================================================
-' Constant defining ( 常数定义 )
-'==============================================================================
-Private Const GW_CHILD = 5
-Private Const GW_HWNDNEXT = 2
-
-'==============================================================================
-' API function declare ( API函数声明 )
-'==============================================================================
-Declare Function FindWindow Lib "User32" Alias "FindWindowA" (ByVal lpClassName As String, ByVal lpWindowName As String) As Long
-Declare Function GetWindow Lib "User32" (ByVal hwnd As Long, ByVal wCmd As Long) As Long
-
-Declare Function ShellExecute Lib "shell32.dll" Alias "ShellExecuteA" (ByVal hwnd As Long, ByVal lpOperation As String, ByVal lpFile As String, ByVal lpParameters As String, ByVal lpDirectory As String, ByVal nShowCmd As Long) As Long
-
-Declare Function SetWindowPos Lib "User32" (ByVal hwnd As Long, ByVal hWndInsertAfter As Long, ByVal X As Long, ByVal Y As Long, ByVal cx As Long, ByVal cy As Long, ByVal wFlags As Long) As Long
-Const SWP_NOMOVE = &H2 '不更动目前视窗位置
-Const SWP_NOSIZE = &H1 '不更动目前视窗大小
-Const HWND_TOPMOST = -1 '设定为最上层
-Const HWND_NOTOPMOST = -2 '取消最上层设定
-Const FLAGS = SWP_NOMOVE Or SWP_NOSIZE
-
-
-'==============================================================================
 Public ProcInfo As StatusBar
-Private hFile As Long
 
-'获取文件建立时间
-Function GetFileCreateTime(filePath As String) As String
+'*************************************************************************
+'**函 数 名：Process
+'**输    入：ProcessNum(Integer) -
+'**        ：ProcessMsg(String)  -
+'**输    出：无
+'**功能描述：程序执行进度 允许其他模块更新执行进度
+'**全局变量：
+'**调用模块：
+'**作    者：Shenhao
+'**日    期：2011-11-07 22:00:01
+'**修 改 人：
+'**日    期：
+'**版    本：V3.6.16
+'*************************************************************************
+Function Process(ProcessNum As Integer, ProcessMsg As String)
 
-    Dim FileHandle As Long
-    Dim fileinfo As BY_HANDLE_FILE_INFORMATION
-    Dim lpReOpenBuff As OFSTRUCT, ft As SYSTEMTIME
-    Dim tZone As TIME_ZONE_INFORMATION
-    
-    Dim dtCreate As Date ' 建立时间。
-
-    Dim bias As Long
-    ' 先取得文件的Handle。
-    FileHandle = OpenFile(filePath, lpReOpenBuff, OF_READ)
-    ' 利用文件的Handle读取文件信息。
-    Call GetFileInformationByHandle(FileHandle, fileinfo)
-    Call CloseHandle(FileHandle)
-    ' 读取时间信息， 因为上一步骤的文件时间是格林威治时间。
-    Call GetTimeZoneInformation(tZone)
-    bias = tZone.bias ' 时间差， 以分为单位。
-    Call FileTimeToSystemTime(fileinfo.ftCreationTime, ft) ' 转换时间结构。
-    dtCreate = DateSerial(ft.wYear, ft.wMonth, ft.wDay) + TimeSerial(ft.wHour, ft.wMinute - bias, ft.wSecond)
-    
-    GetFileCreateTime = CStr(dtCreate)
-
+    MainForm.StatusBar1.Panels(1) = ProcessMsg
+    MainForm.StatusBar1.Panels(2) = ProcessNum & "%"
 End Function
 
-'获取文件修改时间
-Function GetFileWriteTime(filePath As String) As String
-
-    Dim FileHandle As Long
-    Dim fileinfo As BY_HANDLE_FILE_INFORMATION
-    Dim lpReOpenBuff As OFSTRUCT, ft As SYSTEMTIME
-    Dim tZone As TIME_ZONE_INFORMATION
-    
-    Dim dtWrite As Date ' 修改时间。
-    Dim bias As Long
-    ' 先取得文件的Handle。
-    FileHandle = OpenFile(filePath, lpReOpenBuff, OF_READ)
-    ' 利用文件的Handle读取文件信息。
-    Call GetFileInformationByHandle(FileHandle, fileinfo)
-    Call CloseHandle(FileHandle)
-    ' 读取时间信息， 因为上一步骤的文件时间是格林威治时间。
-    Call GetTimeZoneInformation(tZone)
-    bias = tZone.bias ' 时间差， 以分为单位。
-    
-    Call FileTimeToSystemTime(fileinfo.ftLastWriteTime, ft)
-    dtWrite = DateSerial(ft.wYear, ft.wMonth, ft.wDay) + TimeSerial(ft.wHour, ft.wMinute - bias, ft.wSecond)
-
-    GetFileWriteTime = CStr(dtWrite)
-
-End Function
-
-'获取文件存取时间
-Function GetFileAccessTime(filePath As String) As String
-
-    Dim FileHandle As Long
-    Dim fileinfo As BY_HANDLE_FILE_INFORMATION
-    Dim lpReOpenBuff As OFSTRUCT, ft As SYSTEMTIME
-    Dim tZone As TIME_ZONE_INFORMATION
-    
-    Dim dtAccess As Date ' 存取日期。
-    Dim bias As Long
-    ' 先取得文件的Handle。
-    FileHandle = OpenFile(filePath, lpReOpenBuff, OF_READ)
-    ' 利用文件的Handle读取文件信息。
-    Call GetFileInformationByHandle(FileHandle, fileinfo)
-    Call CloseHandle(FileHandle)
-    ' 读取时间信息， 因为上一步骤的文件时间是格林威治时间。
-    Call GetTimeZoneInformation(tZone)
-    bias = tZone.bias ' 时间差， 以分为单位。
-    
-    Call FileTimeToSystemTime(fileinfo.ftLastAccessTime, ft)
-    dtAccess = DateSerial(ft.wYear, ft.wMonth, ft.wDay) + TimeSerial(ft.wHour, ft.wMinute - bias, ft.wSecond)
-
-    GetFileAccessTime = CStr(dtAccess)
-
-End Function
-
-'将 窗口设定成永远保持在最上层
+'*************************************************************************
+'**函 数 名：SetWindowsPos_TopMost
+'**输    入：hwnd(Long) -
+'**输    出：无
+'**功能描述：将 窗口设定成永远保持在最上层
+'**全局变量：
+'**调用模块：
+'**作    者：Shenhao
+'**日    期：2011-11-07 22:00:17
+'**修 改 人：
+'**日    期：
+'**版    本：V3.6.16
+'*************************************************************************
 Function SetWindowsPos_TopMost(hwnd As Long)
     SetWindowPos hwnd, HWND_TOPMOST, 0, 0, 0, 0, FLAGS
 End Function
 
-'取消最上层设定
+'*************************************************************************
+'**函 数 名：SetWindowsPos_NoTopMost
+'**输    入：hwnd(Long) -
+'**输    出：无
+'**功能描述：取消最上层设定
+'**全局变量：
+'**调用模块：
+'**作    者：Shenhao
+'**日    期：2011-11-07 22:00:33
+'**修 改 人：
+'**日    期：
+'**版    本：V3.6.16
+'*************************************************************************
 Function SetWindowsPos_NoTopMost(hwnd As Long)
     SetWindowPos hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, FLAGS
 End Function
 
-'获取文件内容 并且去掉无意义空行
+
+'*************************************************************************
+'**函 数 名：SetRegValue
+'**输    入：AppName(String)            -
+'**        ：KeyName(String)            -
+'**        ：ByVal lType(enumRegSzType) -
+'**        ：                           -
+'**输    出：(Boolean) -
+'**功能描述：设置注册表子项
+'**全局变量：
+'**调用模块：
+'**作    者：Shenhao
+'**日    期：2011-11-07 22:00:50
+'**修 改 人：
+'**日    期：
+'**版    本：V3.6.16
+'*************************************************************************
+Public Function SetRegValue(AppName As String, KeyName As String, ByVal lType As enumRegSzType, ByVal KeyValue) As Boolean
+
+     SetRegValue = SetValue(iHKEY_CURRENT_USER, "SOFTWARE\" + AppName, KeyName, lType, KeyValue)
+     
+End Function
+
+
+'*************************************************************************
+'**函 数 名：SetRegValue
+'**输    入：AppName(String)            -
+'**        ：KeyName(String)            -
+'**        ：ByVal lType(enumRegSzType) -
+'**        ：                           -
+'**输    出：(Boolean) -
+'**功能描述：读取注册表子项
+'**全局变量：
+'**调用模块：
+'**作    者：Shenhao
+'**日    期：2011-11-07 22:00:50
+'**修 改 人：
+'**日    期：
+'**版    本：V3.6.16
+'*************************************************************************
+Public Function GetRegValue(AppName As String, KeyName As String, Optional DefaultKeyValue As Variant) As Variant
+
+    If GetValue(iHKEY_CURRENT_USER, "SOFTWARE\" + AppName, KeyName, GetRegValue) = False Then
+        GetRegValue = DefaultKeyValue
+    End If
+    
+End Function
+
+Public Function GetExcelVer() As String
+
+    Dim sKeyReg() As String
+    Dim tmpReg()  As String
+    Dim Cnt       As Long
+    
+    
+    If RegEnumKeyVal(iHKEY_LOCAL_MACHINE, "SOFTWARE\Microsoft\Office", sKeyReg) = False Then
+        GetExcelVer = ""
+        Exit Function
+    End If
+
+    For Cnt = 0 To UBound(sKeyReg)
+        Select Case sKeyReg(Cnt)
+        Case "14.0", "12.0", "11.0", "10.0", "9.0", "8.0", "5.0", "4.0", "3.0" 'Excel各个版本号
+            If RegEnumKeyVal(iHKEY_LOCAL_MACHINE, "SOFTWARE\Microsoft\Office\" & sKeyReg(Cnt) & "\Excel", tmpReg) = True Then
+                GetExcelVer = sKeyReg(Cnt)
+                Exit For
+            End If
+
+        Case Else
+            If CInt(sKeyReg(Cnt)) > 14 Then
+                GetExcelVer = sKeyReg(Cnt)
+            Else
+                GetExcelVer = ""
+            End If
+        End Select
+    Next
+    
+End Function
+
+'去除缓冲区中多余的Chr(0)
+Public Function StripTerminator(sInput As String) As String
+  Dim ZeroPos As Integer
+  '找到第一个Chr(0)
+  ZeroPos = InStr(1, sInput, vbNullChar)
+  If ZeroPos > 0 Then '如果存在,则去掉后面所有的内容
+    StripTerminator = Left$(sInput, ZeroPos - 1)
+  Else '如果不存在,不做任何操作
+    StripTerminator = sInput
+  End If
+End Function
+
+
+
+'*************************************************************************
+'**函 数 名：KillExcel
+'**输    入：ExcelFilePath(String) -
+'**输    出：无
+'**功能描述：删除旧的Excel格式文件
+'**全局变量：
+'**调用模块：
+'**作    者：Shenhao
+'**日    期：2011-11-07 22:01:29
+'**修 改 人：
+'**日    期：
+'**版    本：V3.6.16
+'*************************************************************************
+Function KillExcel(ExcelFilePath As String)
+On Error GoTo ErrorHandle
+    If Dir(ExcelFilePath) <> "" Then
+        Kill ExcelFilePath
+    End If
+    
+    Exit Function
+    
+ErrorHandle:
+    MsgBox "文件：" & vbCrLf & Right(ExcelFilePath, Len(ExcelFilePath) - InStrRev(ExcelFilePath, "\")) & vbCrLf & vbCrLf & _
+           "已经打开或被占用，请将其关闭后重新运行程序！", vbCritical + vbOKOnly + vbMsgBoxSetForeground, "错误"
+    End
+End Function
+
+
+'*************************************************************************
+'**函 数 名：GetPath
+'**输    入：Promt(String) - 提示内容
+'**输    出：结果为选择的目录
+'**功能描述：选择目录路径
+'**全局变量：
+'**调用模块：
+'**作    者：Shenhao
+'**日    期：2011-11-07 22:01:41
+'**修 改 人：
+'**日    期：
+'**版    本：V3.6.16
+'*************************************************************************
+Function GetPath(Promt As String)
+    Dim objshell
+    Dim objfolder
+    Set objshell = CreateObject("Shell.Application")
+        Set objfolder = objshell.BrowseForFolder(0, Promt, 0, 0)
+            If Not objfolder Is Nothing Then
+                GetPath = objfolder.self.Path
+            End If
+        Set objfolder = Nothing
+    Set objshell = Nothing
+End Function
+
+'*************************************************************************
+'**函 数 名：GetFileContents
+'**输    入：filePath(String) -
+'**输    出：(String) -
+'**功能描述：获取文件内容 并且去掉无意义空行
+'**全局变量：
+'**调用模块：
+'**作    者：Shenhao
+'**日    期：2011-11-07 22:02:21
+'**修 改 人：
+'**日    期：
+'**版    本：V3.6.16
+'*************************************************************************
 Function GetFileContents(filePath As String) As String
     Dim cfgfile            As String
     Dim cfgfilenum         As Integer
@@ -228,6 +262,20 @@ Function GetFileContents(filePath As String) As String
     GetFileContents = cleanContents
 End Function
 
+
+'*************************************************************************
+'**函 数 名：GetBomContents
+'**输    入：filePath(String) -
+'**输    出：(String) -
+'**功能描述：获取物料BOM文件内容
+'**全局变量：
+'**调用模块：
+'**作    者：Shenhao
+'**日    期：2011-11-07 22:02:30
+'**修 改 人：
+'**日    期：
+'**版    本：V3.6.16
+'*************************************************************************
 Function GetBomContents(filePath As String) As String
     
     Dim BomLine()    As String
@@ -279,7 +327,22 @@ Function GetBomContents(filePath As String) As String
     
 End Function
 
-'参数一 要写入的文件地址，参数二 修改的行数 ，参数三 写入或替换的字符串
+
+'*************************************************************************
+'**函 数 名：WriteTxt
+'**输    入：strSourceFile(String) - 要写入的文件地址
+'**        ：intRow(Long)          - 修改的行数
+'**        ：StrLineNew(String)    - 写入或替换的字符串
+'**输    出：无
+'**功能描述：
+'**全局变量：
+'**调用模块：
+'**作    者：Shenhao
+'**日    期：2011-11-07 22:02:52
+'**修 改 人：
+'**日    期：
+'**版    本：V3.6.16
+'*************************************************************************
 Public Function WriteTxt(strSourceFile As String, intRow As Long, StrLineNew As String)
 
     Dim StrOut As String, tmpStrLine As String
@@ -308,7 +371,20 @@ Public Function WriteTxt(strSourceFile As String, intRow As Long, StrLineNew As 
 
 End Function
 
-'返回 要输出的文本，参数一 文件地址，参数二 读取的行数
+'*************************************************************************
+'**函 数 名：ReadTxt
+'**输    入：StrFile(String) -  文件地址
+'**        ：intRow(Long)    -  读取的行数
+'**输    出：(String) -  要输出的文本
+'**功能描述：
+'**全局变量：
+'**调用模块：
+'**作    者：Shenhao
+'**日    期：2011-11-07 22:03:13
+'**修 改 人：
+'**日    期：
+'**版    本：V3.6.16
+'*************************************************************************
 Public Function ReadTxt(StrFile As String, intRow As Long) As String
     Dim StrOut As String, tmpStrLine As String
     Dim X As Long
@@ -324,42 +400,6 @@ Public Function ReadTxt(StrFile As String, intRow As Long) As String
     End If
     
 End Function
-
-'参数为提示内容，返回结果为选择的目录
-Function GetPath(Promt As String)
-    Dim objshell
-    Dim objfolder
-    Set objshell = CreateObject("Shell.Application")
-        Set objfolder = objshell.BrowseForFolder(0, Promt, 0, 0)
-            If Not objfolder Is Nothing Then
-                GetPath = objfolder.self.Path
-            End If
-        Set objfolder = Nothing
-    Set objshell = Nothing
-End Function
-
-'程序执行进度 允许其他模块更新执行进度
-Function Process(ProcessNum As Integer, ProcessMsg As String)
-
-    MainForm.StatusBar1.Panels(1) = ProcessMsg
-    MainForm.StatusBar1.Panels(2) = ProcessNum & "%"
-End Function
-
-'删除旧的Excel格式文件
-Function KillExcel(ExcelFilePath As String)
-On Error GoTo ErrorHandle
-    If Dir(ExcelFilePath) <> "" Then
-        Kill ExcelFilePath
-    End If
-    
-    Exit Function
-    
-ErrorHandle:
-    MsgBox "文件：" & vbCrLf & Right(ExcelFilePath, Len(ExcelFilePath) - InStrRev(ExcelFilePath, "\")) & vbCrLf & vbCrLf & _
-           "已经打开或被占用，请将其关闭后重新运行程序！", vbCritical + vbOKOnly + vbMsgBoxSetForeground, "错误"
-    End
-End Function
-
 
 '*************************************************************************
 '**函 数 名：AutoLoginERP
@@ -549,8 +589,6 @@ Check_Done:
         .Document.GetElementById("UploadFile_oafileUpload").Click
         DoEvents
         
-        'UploadFile
-        
         '.Document.Forms(0).All("UploadFile_oafileUpload").Value = "E:\其他任务\MakeBomTest\test\TL-SL1210-2.0\BOM\TL-SL1210(UN)_2.0_SCHV_2.0_DEV1_PCBV_1.0SP1_批量资源查询.xls"
         
         .Document.GetElementById("Go").FireEvent "onclick"
@@ -561,48 +599,124 @@ Check_Done:
         
         '重新开始查询
         
-        
-        
     End With
     
 End Function
 
-Function UploadFile()
-    Dim ParentWnd As Long   '父窗口句柄
-    Dim ClientWnd As Long   '子窗口句柄
+
+'*************************************************************************
+'**函 数 名：GetFileCreateTime
+'**输    入：filePath(String) -
+'**输    出：(String) -
+'**功能描述：获取文件建立时间
+'**全局变量：
+'**调用模块：
+'**作    者：Shenhao
+'**日    期：2011-11-07 22:03:38
+'**修 改 人：
+'**日    期：
+'**版    本：V3.6.16
+'*************************************************************************
+Function GetFileCreateTime(filePath As String) As String
+
+    Dim FileHandle As Long
+    Dim fileinfo As BY_HANDLE_FILE_INFORMATION
+    Dim lpReOpenBuff As OFSTRUCT, ft As SYSTEMTIME
+    Dim tZone As TIME_ZONE_INFORMATION
     
-    Dim msgstr    As String
+    Dim dtCreate As Date ' 建立时间。
+
+    Dim bias As Long
+    ' 先取得文件的Handle。
+    FileHandle = OpenFile(filePath, lpReOpenBuff, OF_READ)
+    ' 利用文件的Handle读取文件信息。
+    Call GetFileInformationByHandle(FileHandle, fileinfo)
+    Call CloseHandle(FileHandle)
+    ' 读取时间信息， 因为上一步骤的文件时间是格林威治时间。
+    Call GetTimeZoneInformation(tZone)
+    bias = tZone.bias ' 时间差， 以分为单位。
+    Call FileTimeToSystemTime(fileinfo.ftCreationTime, ft) ' 转换时间结构。
+    dtCreate = DateSerial(ft.wYear, ft.wMonth, ft.wDay) + TimeSerial(ft.wHour, ft.wMinute - bias, ft.wSecond)
     
-    VB.Clipboard.SetText "E:\其他任务\MakeBomTest\test\TL-SL1210-2.0\BOM\TL-SL1210(UN)_2.0_SCHV_2.0_DEV1_PCBV_1.0SP1_批量资源查询.xls"
+    GetFileCreateTime = CStr(dtCreate)
+
+End Function
+
+
+'*************************************************************************
+'**函 数 名：GetFileWriteTime
+'**输    入：filePath(String) -
+'**输    出：(String) -
+'**功能描述：获取文件修改时间
+'**全局变量：
+'**调用模块：
+'**作    者：Shenhao
+'**日    期：2011-11-07 22:03:46
+'**修 改 人：
+'**日    期：
+'**版    本：V3.6.16
+'*************************************************************************
+Function GetFileWriteTime(filePath As String) As String
+
+    Dim FileHandle As Long
+    Dim fileinfo As BY_HANDLE_FILE_INFORMATION
+    Dim lpReOpenBuff As OFSTRUCT, ft As SYSTEMTIME
+    Dim tZone As TIME_ZONE_INFORMATION
     
-    '以下是取得你指定窗口句柄过程，注意修改类名和窗口名
-    ParentWnd = FindWindow("Dialog", "选择要加载的文件")
-    If ParentWnd = 0 Then
-        'MsgBox "没有找到父窗口", 16, "错误"
-        Exit Function
-    Else
-        MsgBox "找到窗口"
-        SendKeys "^v" & "~"
-    End If
+    Dim dtWrite As Date ' 修改时间。
+    Dim bias As Long
+    ' 先取得文件的Handle。
+    FileHandle = OpenFile(filePath, lpReOpenBuff, OF_READ)
+    ' 利用文件的Handle读取文件信息。
+    Call GetFileInformationByHandle(FileHandle, fileinfo)
+    Call CloseHandle(FileHandle)
+    ' 读取时间信息， 因为上一步骤的文件时间是格林威治时间。
+    Call GetTimeZoneInformation(tZone)
+    bias = tZone.bias ' 时间差， 以分为单位。
     
+    Call FileTimeToSystemTime(fileinfo.ftLastWriteTime, ft)
+    dtWrite = DateSerial(ft.wYear, ft.wMonth, ft.wDay) + TimeSerial(ft.wHour, ft.wMinute - bias, ft.wSecond)
+
+    GetFileWriteTime = CStr(dtWrite)
+
+End Function
+
+
+'*************************************************************************
+'**函 数 名：GetFileAccessTime
+'**输    入：filePath(String) -
+'**输    出：(String) -
+'**功能描述：获取文件存取时间
+'**全局变量：
+'**调用模块：
+'**作    者：Shenhao
+'**日    期：2011-11-07 22:03:55
+'**修 改 人：
+'**日    期：
+'**版    本：V3.6.16
+'*************************************************************************
+Function GetFileAccessTime(filePath As String) As String
+
+    Dim FileHandle As Long
+    Dim fileinfo As BY_HANDLE_FILE_INFORMATION
+    Dim lpReOpenBuff As OFSTRUCT, ft As SYSTEMTIME
+    Dim tZone As TIME_ZONE_INFORMATION
     
-    'SendKeys "^v"
+    Dim dtAccess As Date ' 存取日期。
+    Dim bias As Long
+    ' 先取得文件的Handle。
+    FileHandle = OpenFile(filePath, lpReOpenBuff, OF_READ)
+    ' 利用文件的Handle读取文件信息。
+    Call GetFileInformationByHandle(FileHandle, fileinfo)
+    Call CloseHandle(FileHandle)
+    ' 读取时间信息， 因为上一步骤的文件时间是格林威治时间。
+    Call GetTimeZoneInformation(tZone)
+    bias = tZone.bias ' 时间差， 以分为单位。
     
-    '取得第一个子窗口的句柄
-    'ClientWnd = GetWindow(ParentWnd, GW_CHILD)
-    'If ClientWnd = 0 Then
-    '    MsgBox "在指定窗口中没有发现子窗口的存在", 16, "错误"
-    '    Exit Function
-    'End If
-    
-    '开始循环查找所有相同层次的子窗口
-    'Do
-    '    DoEvents
-    '    msgstr = msgstr & "子窗口：" & ClientWnd & vbCrLf
-    '    ClientWnd = GetWindow(ClientWnd, GW_HWNDNEXT)
-    'Loop While ClientWnd <> 0
-    
-    'MsgBox "完成处理。", 64, "提示"
-    
+    Call FileTimeToSystemTime(fileinfo.ftLastAccessTime, ft)
+    dtAccess = DateSerial(ft.wYear, ft.wMonth, ft.wDay) + TimeSerial(ft.wHour, ft.wMinute - bias, ft.wSecond)
+
+    GetFileAccessTime = CStr(dtAccess)
+
 End Function
 
