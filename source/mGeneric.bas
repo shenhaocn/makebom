@@ -242,7 +242,7 @@ Function GetFileContents(filePath As String) As String
         Get #cfgfilenum, , cfgfileContents
     Close cfgfilenum
 
-    cleanContents = UEFLoadTextFile(filePath, UEF_ANSI)
+    cleanContents = UEFLoadTextFile(filePath, UEF_AUTO)
     
     '去掉空行
     '删除在文件中读取的单独的无意义的空行
