@@ -182,10 +182,6 @@ Begin VB.Form MainForm
       Caption         =   "封装库"
       NegotiatePosition=   2  'Middle
    End
-   Begin VB.Menu menu_checker 
-      Caption         =   "BomChecker"
-      NegotiatePosition=   2  'Middle
-   End
    Begin VB.Menu menu_feedback 
       Caption         =   "反馈"
       NegotiatePosition=   2  'Middle
@@ -305,38 +301,6 @@ End Sub
 Private Sub menu_lib_Click()
     '打开库文件
     frmLib.Show 1
-End Sub
-
-Private Sub menu_checker_Click()
-    Dim GetPath As String
-    ProjectDir = GetRegValue(App.EXEName, "ProjectDir", "E:\")
-    
-    CommonDialog1.InitDir = ProjectDir
-    CommonDialog1.FileName = ""
-    CommonDialog1.DialogTitle = "请选择Excel格式的BOM文件"
-    CommonDialog1.Filter = "All File(*.*)|*.*|Excel BOM files(*.xls)|*.xls"
-    CommonDialog1.FilterIndex = 2
-    CommonDialog1.ShowOpen
-    
-    GetPath = CommonDialog1.FileName
-    
-    If GetPath = "" Then
-        Exit Sub
-    End If
-    
-    Dim filetype As String
-    filetype = Right(GetPath, Len(GetPath) - InStrRev(GetPath, ".") + 1)
-
-    Select Case LCase(filetype)
-    Case ".xls":
-        '导入BOM检查器
-        BomChecker GetPath
-        
-    Case Else
-        MsgBox "文件类型错误！", vbMsgBoxSetForeground + vbExclamation + vbOKOnly, "警告"
-        ClearPath
-    End Select
-    
 End Sub
 
 Private Sub menu_about_Click()
