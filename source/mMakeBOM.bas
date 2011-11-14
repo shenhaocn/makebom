@@ -579,6 +579,20 @@ Function CreateBOM(bt_value As BomType) As Boolean
 
     If bt_value = BOM_调试 Or bt_value = BOM_领料 Or _
        bt_value = BOM_生产 Or bt_value = BOM_预 Then
+        '修改BOM标题
+        Select Case bt_value
+        Case BOM_调试
+            xlSheet.Cells(1, 1) = "调试BOM初稿"
+        Case BOM_领料
+            xlSheet.Cells(1, 1) = "领料BOM初稿"
+        Case BOM_生产
+            xlSheet.Cells(1, 1) = "生产BOM初稿"
+        Case BOM_预
+            xlSheet.Cells(1, 1) = "预BOM初稿"
+        Case Else
+            xlSheet.Cells(1, 1) = "预BOM初稿"
+        End Select
+        
         '修改机型名称
         xlSheet.Cells(2, 1) = "机型：  " & MainForm.ItemNameText.Text & "            PCBA 版本：                       半成品编号："
         If MainForm.ItemNameText.Text = "" Then
