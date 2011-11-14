@@ -4,7 +4,7 @@ Object = "{831FDD16-0C5C-11D2-A9FC-0000F8754DA1}#2.0#0"; "MSCOMCTL.OCX"
 Begin VB.Form MainForm 
    BorderStyle     =   1  'Fixed Single
    Caption         =   "MakeBOM(BOM生成工具)"
-   ClientHeight    =   4170
+   ClientHeight    =   4335
    ClientLeft      =   150
    ClientTop       =   780
    ClientWidth     =   4545
@@ -21,63 +21,123 @@ Begin VB.Form MainForm
    LinkTopic       =   "Form1"
    MaxButton       =   0   'False
    OLEDropMode     =   1  'Manual
-   ScaleHeight     =   4170
+   ScaleHeight     =   4335
    ScaleWidth      =   4545
    StartUpPosition =   3  '窗口缺省
    Begin VB.Frame Frame1 
       Caption         =   "BOM类型"
-      Height          =   1035
+      Height          =   1395
       Left            =   180
       TabIndex        =   6
-      Top             =   900
+      Top             =   735
       Width           =   4155
       Begin VB.CheckBox CheckNcDbg 
-         Caption         =   "NC DBG元件"
-         Height          =   255
-         Left            =   2640
-         TabIndex        =   12
-         Top             =   300
-         Width           =   1395
-      End
-      Begin VB.CheckBox CheckAll 
-         Caption         =   "全选"
+         Caption         =   "NCDBG元件"
          Height          =   255
          Left            =   120
+         TabIndex        =   12
+         Top             =   600
+         Value           =   1  'Checked
+         Width           =   1155
+      End
+      Begin VB.CheckBox CheckNone 
+         Caption         =   "None元件"
+         Height          =   255
+         Left            =   1560
          TabIndex        =   11
-         Top             =   300
+         Top             =   600
+         Value           =   1  'Checked
          Width           =   1035
       End
       Begin VB.CheckBox Check_生产 
          Caption         =   "生产BOM"
          Height          =   255
-         Left            =   2640
+         Left            =   1560
          TabIndex        =   10
-         Top             =   660
+         Top             =   960
+         Value           =   1  'Checked
          Width           =   975
       End
       Begin VB.CheckBox Check_调试 
          Caption         =   "调试BOM"
          Height          =   255
-         Left            =   1380
+         Left            =   120
          TabIndex        =   9
-         Top             =   660
+         Top             =   960
+         Value           =   1  'Checked
          Width           =   1155
       End
       Begin VB.CheckBox Check_领料 
          Caption         =   "领料BOM"
          Height          =   255
-         Left            =   120
+         Left            =   1560
          TabIndex        =   8
-         Top             =   660
+         Top             =   240
+         Value           =   1  'Checked
          Width           =   1155
       End
       Begin VB.CheckBox CheckPreBom 
          Caption         =   "预BOM"
          Height          =   255
-         Left            =   1380
+         Left            =   120
          TabIndex        =   7
-         Top             =   300
+         Top             =   240
+         Value           =   1  'Checked
          Width           =   1095
+      End
+      Begin VB.Label Label3 
+         Caption         =   "清空"
+         BeginProperty Font 
+            Name            =   "宋体"
+            Size            =   9
+            Charset         =   0
+            Weight          =   400
+            Underline       =   -1  'True
+            Italic          =   0   'False
+            Strikethrough   =   0   'False
+         EndProperty
+         ForeColor       =   &H00FF0000&
+         Height          =   255
+         Left            =   3120
+         TabIndex        =   15
+         Top             =   960
+         Width           =   855
+      End
+      Begin VB.Label Label2 
+         Caption         =   "反选"
+         BeginProperty Font 
+            Name            =   "宋体"
+            Size            =   9
+            Charset         =   0
+            Weight          =   400
+            Underline       =   -1  'True
+            Italic          =   0   'False
+            Strikethrough   =   0   'False
+         EndProperty
+         ForeColor       =   &H00FF0000&
+         Height          =   255
+         Left            =   3120
+         TabIndex        =   14
+         Top             =   600
+         Width           =   855
+      End
+      Begin VB.Label Label1 
+         Caption         =   "全选"
+         BeginProperty Font 
+            Name            =   "宋体"
+            Size            =   9
+            Charset         =   0
+            Weight          =   400
+            Underline       =   -1  'True
+            Italic          =   0   'False
+            Strikethrough   =   0   'False
+         EndProperty
+         ForeColor       =   &H00FF0000&
+         Height          =   255
+         Left            =   3120
+         TabIndex        =   13
+         Top             =   240
+         Width           =   855
       End
    End
    Begin MSComDlg.CommonDialog CommonDialog1 
@@ -134,7 +194,7 @@ Begin VB.Form MainForm
       Height          =   315
       Left            =   0
       TabIndex        =   1
-      Top             =   3855
+      Top             =   4020
       Width           =   4545
       _ExtentX        =   8017
       _ExtentY        =   556
@@ -175,7 +235,7 @@ Begin VB.Form MainForm
       Left            =   180
       OLEDropMode     =   1  'Manual
       TabIndex        =   0
-      Top             =   2100
+      Top             =   2280
       Width           =   4155
    End
    Begin VB.Menu menu_lib 
@@ -342,50 +402,57 @@ Private Sub Combo1_LostFocus()
 
 End Sub
 
-'选择需要生成的BOM文件
-Private Sub CheckAll_Click()
-
-    If CheckAll.Value = Checked Then
-        CheckPreBom.Value = Checked
-        CheckNcDbg.Value = Checked
-        Check_领料.Value = Checked
-        Check_调试.Value = Checked
-        Check_生产.Value = Checked
-    End If
-
+'全选
+Private Sub Label1_Click()
+    Dim PerBox As Object
+    For Each PerBox In Me.Controls
+        If TypeOf PerBox Is CheckBox Then
+            PerBox.Value = Checked
+        End If
+    DoEvents: Next
 End Sub
 
-Private Sub CheckCheck()
-    If CheckPreBom.Value = Checked And _
-       CheckNcDbg.Value = Checked And _
-       Check_领料.Value = Checked And _
-       Check_调试.Value = Checked And _
-       Check_生产.Value = Checked Then
-       
-        CheckAll.Value = Checked
-    Else
-        CheckAll.Value = Unchecked
-    End If
+'反选
+Private Sub Label2_Click()
+    Dim PerBox As Object
+    For Each PerBox In Me.Controls
+        If TypeOf PerBox Is CheckBox Then
+            If PerBox.Value = Checked Then
+                PerBox.Value = Unchecked
+            Else
+                PerBox.Value = Checked
+            End If
+        End If
+    DoEvents: Next
 End Sub
 
-Private Sub Check_调试_Click()
-    CheckCheck
+'清空
+Private Sub Label3_Click()
+    Dim PerBox As Object
+    For Each PerBox In Me.Controls
+        If TypeOf PerBox Is CheckBox Then
+            PerBox.Value = Unchecked
+        End If
+    DoEvents: Next
 End Sub
 
-Private Sub Check_领料_Click()
-    CheckCheck
+'手型鼠标实现
+Private Sub Label1_MouseMove(Button As Integer, Shift As Integer, X As Single, Y As Single)
+    Static hCursor As Long
+    If hCursor = 0 Then hCursor = LoadCursorBynum&(0&, IDC_HAND)
+    SetCursor hCursor
 End Sub
 
-Private Sub Check_生产_Click()
-    CheckCheck
+Private Sub Label2_MouseMove(Button As Integer, Shift As Integer, X As Single, Y As Single)
+    Static hCursor As Long
+    If hCursor = 0 Then hCursor = LoadCursorBynum&(0&, IDC_HAND)
+    SetCursor hCursor
 End Sub
 
-Private Sub CheckNcDbg_Click()
-    CheckCheck
-End Sub
-
-Private Sub CheckPreBom_Click()
-    CheckCheck
+Private Sub Label3_MouseMove(Button As Integer, Shift As Integer, X As Single, Y As Single)
+    Static hCursor As Long
+    If hCursor = 0 Then hCursor = LoadCursorBynum&(0&, IDC_HAND)
+    SetCursor hCursor
 End Sub
 
 '允许拖放操作
@@ -676,10 +743,14 @@ Private Sub BomCreate()
     End If
     
     If CheckNcDbg.Value = Checked Then
-        Process 83, "创建NC_DBG和NONE BOM ..."
+        Process 83, "创建NC_DBG BOM ..."
         ExcelCreate BOM_NCDBG
         CreateBOM BOM_NCDBG
         
+    End If
+    
+    If CheckNone.Value = Checked Then
+        Process 85, "创建NONE BOM ..."
         ExcelCreate BOM_NONE
         CreateBOM BOM_NONE
         
@@ -700,7 +771,7 @@ Private Sub BomCreate()
     End If
     
     If Check_领料.Value = Checked Then
-        Process 85, "创建领料BOM ..."
+        Process 98, "创建领料BOM ..."
         'tsv文件是否失效？
         If DateDiff("d", CDate(GetFileWriteTime(tsvFilePath)), Now) > 3 Then
             MsgBox "tsv文件已经过期[" & GetFileWriteTime(tsvFilePath) & "]！" & vbCrLf & vbCrLf & _

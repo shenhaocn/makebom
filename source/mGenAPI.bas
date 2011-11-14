@@ -192,9 +192,9 @@ Public Const FLAGS = SWP_NOMOVE Or SWP_NOSIZE
 '==============================================================================
 ' 窗口相关 API函数声明
 '==============================================================================
-Public Declare Function FindWindow Lib "User32" Alias "FindWindowA" (ByVal lpClassName As String, ByVal lpWindowName As String) As Long
-Public Declare Function GetWindow Lib "User32" (ByVal hwnd As Long, ByVal wCmd As Long) As Long
-Public Declare Function SetWindowPos Lib "User32" (ByVal hwnd As Long, ByVal hWndInsertAfter As Long, ByVal X As Long, ByVal Y As Long, ByVal cx As Long, ByVal cy As Long, ByVal wFlags As Long) As Long
+Public Declare Function FindWindow Lib "user32" Alias "FindWindowA" (ByVal lpClassName As String, ByVal lpWindowName As String) As Long
+Public Declare Function GetWindow Lib "user32" (ByVal hwnd As Long, ByVal wCmd As Long) As Long
+Public Declare Function SetWindowPos Lib "user32" (ByVal hwnd As Long, ByVal hWndInsertAfter As Long, ByVal X As Long, ByVal Y As Long, ByVal cx As Long, ByVal cy As Long, ByVal wFlags As Long) As Long
 
 
 '==============================================================================
@@ -202,6 +202,12 @@ Public Declare Function SetWindowPos Lib "User32" (ByVal hwnd As Long, ByVal hWn
 '==============================================================================
 Public Declare Function ShellExecute Lib "shell32.dll" Alias "ShellExecuteA" (ByVal hwnd As Long, ByVal lpOperation As String, ByVal lpFile As String, ByVal lpParameters As String, ByVal lpDirectory As String, ByVal nShowCmd As Long) As Long
 
+'==============================================================================
+' 鼠标手型指针
+'==============================================================================
+Public Declare Function SetCursor Lib "user32" (ByVal hCursor As Long) As Long
+Public Declare Function LoadCursorBynum& Lib "user32" Alias "LoadCursorA" (ByVal hInstance As Long, ByVal lpCursorName As Long)
+Public Const IDC_HAND = 32649&
 '*************************************************************************
 '**函 数 名：GetValue
 '**输    入：ByVal mainKey(enumRegMainKey)       - 主键
