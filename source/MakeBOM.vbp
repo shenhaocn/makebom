@@ -23,6 +23,7 @@ Module=mSortLib; mSortLib.bas
 Module=mMakeBOM; mMakeBOM.bas
 Form=UpdateLib.frm
 Module=mGenAPI; mGenAPI.bas
+ResFile32="XP.RES"
 IconForm="MainForm"
 Startup="MainForm"
 HelpFile=""

@@ -276,6 +276,12 @@ Attribute VB_Exposed = False
 
 Option Explicit
 
+Private Declare Sub InitCommonControls Lib "comctl32.dll" ()
+
+Private Sub Form_Initialize()
+    InitCommonControls
+End Sub
+
 '‘ÿ»Î≥Ã–Ú≈‰÷√
 Private Sub Form_Load()
     
